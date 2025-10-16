@@ -1,12 +1,12 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const Role = require('./role.model');
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define('User', {
+    username: { type: DataTypes.STRING, unique: true, allowNull: false },
+    password: { type: DataTypes.STRING, allowNull: false },
+  });
 
-const User = sequelize.define('user', {
-  username: { type: DataTypes.STRING, unique: true, allowNull: false },
-  password: { type: DataTypes.STRING, allowNull: false },
-});
+  User.associate = (models) => {
+    User.belongsTo(models.Role, { foreignKey: 'role_id' });
+  };
 
-User.belongsTo(Role, { foreignKey: 'role_id' });
-
-module.exports = User;
+  return User;
+};

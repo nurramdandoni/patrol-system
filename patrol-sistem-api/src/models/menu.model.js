@@ -1,12 +1,14 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+module.exports = (sequelize, DataTypes) => {
+  const Menu = sequelize.define('Menu', {
+    name: DataTypes.STRING,
+    path: DataTypes.STRING,
+    icon: DataTypes.STRING,
+    parentId: DataTypes.INTEGER,
+  });
 
-const Menu = sequelize.define('menu', {
-  name: { type: DataTypes.STRING, allowNull: false },
-  code: { type: DataTypes.STRING, unique: true },
-  route: { type: DataTypes.STRING },
-  icon: { type: DataTypes.STRING },
-  parent_id: { type: DataTypes.INTEGER, allowNull: true },
-});
+  Menu.associate = (models) => {
+    Menu.hasMany(models.Permission, { foreignKey: 'menuId' });
+  };
 
-module.exports = Menu;
+  return Menu;
+};

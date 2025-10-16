@@ -1,10 +1,13 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
+module.exports = (sequelize, DataTypes) => {
+  const Permission = sequelize.define('Permission', {
+    action: { type: DataTypes.STRING, allowNull: false },
+    description: DataTypes.STRING,
+  });
 
-const Permission = sequelize.define('permission', {
-  name: { type: DataTypes.STRING, allowNull: false },
-  code: { type: DataTypes.STRING, unique: true },
-  description: { type: DataTypes.STRING },
-});
+  Permission.associate = (models) => {
+    Permission.belongsTo(models.Menu, { foreignKey: 'menuId' });
+    Permission.belongsToMany(models.Role, { through: models.RoleMenuPermission });
+  };
 
-module.exports = Permission;
+  return Permission;
+};

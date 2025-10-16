@@ -3,26 +3,31 @@ const { sequelize, Role, Permission, User } = require('./models');
 
 (async () => {
   try {
+    // sinkronisasi schema dulu
     await sequelize.sync({ alter: true });
 
     // --- ROLE SEEDER ---
     const roles = [
-      { name: 'admin', description: 'Full access' },
-      { name: 'supervisor', description: 'Limited edit' },
-      { name: 'user', description: 'Read-only' },
+      { name: 'admin', description: 'Full access to all menus and permissions' },
+      { name: 'supervisor', description: 'Can view and edit limited data' },
+      { name: 'user', description: 'Read-only access' },
     ];
-    await Role.bulkCreate(roles, { ignoreDuplicates: true });
+    for (const role of roles) {
+      await Role.findOrCreate({ where: { name: role.name }, defaults: role });
+    }
     console.log('✅ Roles seeded');
 
     // --- PERMISSION SEEDER ---
     const permissions = [
-      { name: 'View', code: 'view', description: 'Melihat data' },
-      { name: 'Create', code: 'create', description: 'Menambah data' },
-      { name: 'Edit', code: 'edit', description: 'Mengubah data' },
-      { name: 'Delete', code: 'delete', description: 'Menghapus data' },
-      { name: 'Print', code: 'print', description: 'Mencetak report' },
+      { action: 'view', description: 'Melihat data' },
+      { action: 'create', description: 'Menambah data' },
+      { action: 'edit', description: 'Mengubah data' },
+      { action: 'delete', description: 'Menghapus data' },
+      { action: 'print', description: 'Mencetak report' },
     ];
-    await Permission.bulkCreate(permissions, { ignoreDuplicates: true });
+    for (const perm of permissions) {
+      await Permission.findOrCreate({ where: { action: perm.action }, defaults: perm });
+    }
     console.log('✅ Permissions seeded');
 
     // --- ADMIN USER DEFAULT ---
@@ -38,13 +43,16 @@ const { sequelize, Role, Permission, User } = require('./models');
     });
 
     if (created) {
-      console.log('✅ Default admin user created:');
+      console.log('✅ Default admin user created');
     } else {
-      console.log('ℹ️ Default admin user already exists:');
+      console.log('ℹ️ Default admin user already exists');
     }
-    console.log('   Username: admin');
-    console.log('   Password: admin123');
 
+    console.log('----------------------------------');
+    console.log('Username : admin');
+    console.log('Password : admin123');
+    console.log('Role     : admin');
+    console.log('----------------------------------');
     console.log('🎉 Seeder selesai!');
     process.exit(0);
   } catch (err) {
