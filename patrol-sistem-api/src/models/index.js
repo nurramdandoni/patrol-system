@@ -9,12 +9,37 @@ const models = {
   User: require('./user.model')(sequelize, DataTypes),
 };
 
-// Jalankan semua associate()
-Object.keys(models).forEach((modelName) => {
-  if (models[modelName].associate) {
-    models[modelName].associate(models);
-  }
+const { Role, Menu, Permission, RoleMenuPermission, User } = models;
+
+// Role ↔ User
+Role.hasMany(User, { foreignKey: 'role_id' });
+User.belongsTo(Role, { foreignKey: 'role_id' });
+
+// Menu self reference
+Menu.belongsTo(Menu, { as: 'parent', foreignKey: 'parentId' });
+Menu.hasMany(Menu, { as: 'children', foreignKey: 'parentId' });
+
+// Role ↔ Menu (many-to-many)
+Role.belongsToMany(Menu, {
+  through: { model: RoleMenuPermission, unique: false },
+  foreignKey: 'role_id',
+  otherKey: 'menu_id',
 });
+
+Menu.belongsToMany(Role, {
+  through: { model: RoleMenuPermission, unique: false },
+  foreignKey: 'menu_id',
+  otherKey: 'role_id',
+});
+
+// RoleMenuPermission detailed relations
+RoleMenuPermission.belongsTo(Role, { foreignKey: 'role_id' });
+RoleMenuPermission.belongsTo(Menu, { foreignKey: 'menu_id' });
+RoleMenuPermission.belongsTo(Permission, { foreignKey: 'permission_id' });
+
+Menu.hasMany(RoleMenuPermission, { foreignKey: 'menu_id' });
+Permission.hasMany(RoleMenuPermission, { foreignKey: 'permission_id' });
+Role.hasMany(RoleMenuPermission, { foreignKey: 'role_id' });
 
 models.sequelize = sequelize;
 models.Sequelize = Sequelize;

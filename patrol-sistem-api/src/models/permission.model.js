@@ -1,13 +1,9 @@
 module.exports = (sequelize, DataTypes) => {
-  const Permission = sequelize.define('Permission', {
+  const Permission = sequelize.define('permission', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     action: { type: DataTypes.STRING, allowNull: false },
     description: DataTypes.STRING,
   });
-
-  Permission.associate = (models) => {
-    Permission.belongsTo(models.Menu, { foreignKey: 'menuId' });
-    Permission.belongsToMany(models.Role, { through: models.RoleMenuPermission });
-  };
 
   return Permission;
 };

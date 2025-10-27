@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { sequelize, Role, Permission, User } = require('./models');
+const { sequelize, Role, Permission, User } = require('../models');
 
 (async () => {
   try {
