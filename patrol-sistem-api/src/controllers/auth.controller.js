@@ -27,9 +27,10 @@ exports.login = async (req, res) => {
 
     // Generate token
     const token = jwtUtils.generateToken({
-      id: user.id,
+      user_id: user.id,
+      role_id: user.role.id,
       username: user.username,
-      role: user.role?.name || 'user',
+      role: user.role.name,
     });
 
     // 🔥 Transformasi data ke bentuk yang lebih rapi
