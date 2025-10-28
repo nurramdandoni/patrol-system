@@ -40,7 +40,9 @@ exports.list = async (req, res) => {
       offset,
     });
     const where = {};
-    where.createdAt = { [Op.gte]: new Date() }
+    const today = new Date();
+    const dateOnly = new Date(today.toISOString().split('T')[0]); 
+    where.createdAt = { [Op.gte]: dateOnly }
     console.log(where);
     const { count: countActivity, rows: rowsActivity } = await PatrolActivity.findAndCountAll({
       where,
@@ -94,18 +96,21 @@ exports.checking = async (req, res) => {
     const { token_location, notes, file_images } = req.body;
     const payload = jwtUtils.verifyToken(token_location);
 
-    // simpan data ke tabel patrol
-    const newPatrol = await Patrol.create({
-        user_id: req.user.user_id,
+    console.log(payload);
+    // simpan data ke tabel patrol actvity
+    const newPatrol = await PatrolActivity.create({
+        check_date: new Date(),
+        check_by: req.user.user_id,
         location_id: payload.location_id,
-        notes: notes,
-        file_images: file_images
+        check_notes: notes,
+        check_image: file_images,
+        check_status:1, // 1 check in, 0 check not
     });
 
     res.json({
         statusCode: 200,
         status: 'Success',
-        message: 'Check In/Out Berhasil Disimpan!',
+        message: 'Check Patrol Berhasil Disimpan!',
         data: newPatrol,
     });
 
