@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     check_notes: { type: DataTypes.STRING, allowNull: false },
     check_image: { type: DataTypes.STRING, allowNull: false },
     check_by: { type: DataTypes.INTEGER, allowNull: false },
+    check_status: { type: DataTypes.TINYINT, allowNull: false, defaultValue: 0 },
   });
 
   return PatrolActivity;

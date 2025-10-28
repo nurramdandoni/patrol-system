@@ -1,7 +1,9 @@
 const bcrypt = require('bcryptjs');
-const { User, RoleMenuPermission, Permission} = require('../models');
+const { Location, PatrolActivity, User} = require('../models');
 const jwtUtils = require('../utils/jwt');
-const { json } = require('sequelize');
+const { json, Op } = require('sequelize');
+const checkPermission = require('../utils/checkPermission');
+const { now } = require('sequelize/lib/utils');
 
 exports.generateQr = async (req, res) => {
     // Generate QR
@@ -16,31 +18,96 @@ exports.readQr = async (req, res) => {
     const payload = jwtUtils.verifyToken(token_location);
     res.json({data: payload});
 }
-exports.checking = async (req, res) => {
-    const menuId = 3;                       // /patrol/check
-    const permissionId = [2];               // 2 create, 3 edit
-    const { token_location, notes, file_images } = req.body;
-
+exports.list = async (req, res) => {
+  try {
+    const menuId = 3;                       // /admin/location
+    const permissionId = [1];               // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
-    const menupPermission = await RoleMenuPermission.findAll({
-      where: {role_id: req.user.role_id, menu_id:menuId},
-      include : [{
-        model:Permission
-      }]
-    });
-    if(menupPermission.length > 0){
-        const havingPermission = menupPermission.map(p => p.permission.id);
-        const hasAllPermissions = permissionId.every(id => havingPermission.includes(id));
-        if(hasAllPermissions){
-            res.json({message:"Permision Access Granted"});
-        }else{
-            res.json({message:"Permision Access minimum Create"});
-        }
-        console.log(menupPermission);
-        console.log(req.user);
-        res.json({message:"halo"});
-    }else{
-        res.json({message:"Access not Allowed, Contact Sys Admin for Access"});
+    const allowed = await checkPermission(menuId, permissionId, req.user);
+    if (!allowed) {
+      return res.status(401).json({
+        status: 'Access',
+        message: 'Access Not Allowed',
+      });
     }
+    
+    const page = parseInt(req.query.page) || 1;
+    const rowCount = parseInt(req.query.rowCount) || 10;
+    const offset = (page - 1) * rowCount;
+
+    const { count, rows } = await Location.findAndCountAll({
+      limit: rowCount,
+      offset,
+    });
+    const where = {};
+    where.createdAt = { [Op.gte]: new Date() }
+    console.log(where);
+    const { count: countActivity, rows: rowsActivity } = await PatrolActivity.findAndCountAll({
+      where,
+      limit: rowCount,
+      offset,
+      include: [
+        {model:User, attributes:['id','username']},
+        {model:Location, attributes:['id','name']}
+      ]
+    });
+
+    let data = [];
+    rows.forEach((item) => {
+        data.push({
+            id: item.id,
+            name: item.name,
+            token_location: jwtUtils.generateToken({location_id: item.id}),
+            patrol_activity: rowsActivity.filter(pa => pa.location_id === item.id)
+        });
+    });
+
+
+
+    res.json({
+      statusCode: 200,
+      status: 'Success',
+      message: 'Data Berhasil Ditemukan!',
+      totalData: count,
+      data: data,
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'Error',
+      message: 'Terjadi Kesalahan Saat Menampilkan Data Lokasi!',
+      data: err.message,
+    });
+  }
+};
+exports.checking = async (req, res) => {
+    const menuId = 3;                       // /admin/location
+    const permissionId = [2];               // 1 view 2 create, 3 edit, 4 delete, 5 print
+    // validasi akses
+    const allowed = await checkPermission(menuId, permissionId, req.user);
+    if (!allowed) {
+      return res.status(401).json({
+        status: 'Access',
+        message: 'Access Not Allowed',
+      });
+    }
+
+    const { token_location, notes, file_images } = req.body;
+    const payload = jwtUtils.verifyToken(token_location);
+
+    // simpan data ke tabel patrol
+    const newPatrol = await Patrol.create({
+        user_id: req.user.user_id,
+        location_id: payload.location_id,
+        notes: notes,
+        file_images: file_images
+    });
+
+    res.json({
+        statusCode: 200,
+        status: 'Success',
+        message: 'Check In/Out Berhasil Disimpan!',
+        data: newPatrol,
+    });
+
     
 };

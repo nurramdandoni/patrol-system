@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { PatrolActivity, Location, User } = require('../models');
 const jwtUtils = require('../utils/jwt');
-const { json } = require('sequelize');
+const { json, Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
 
 exports.patrolActivity = async (req, res) => {
@@ -21,7 +21,21 @@ exports.patrolActivity = async (req, res) => {
     const rowCount = parseInt(req.query.rowCount) || 10;
     const offset = (page - 1) * rowCount;
 
+    const { date_from, date_to } = req.query;
+
+    const where = {};
+    if (date_from && date_to) {
+      where.createdAt = {
+        [Op.between]: [new Date(date_from), new Date(date_to)],
+      };
+    } else if (date_from) {
+      where.createdAt = { [Op.gte]: new Date(date_from) };
+    } else if (date_to) {
+      where.createdAt = { [Op.lte]: new Date(date_to) };
+    }
+
     const { count, rows } = await PatrolActivity.findAndCountAll({
+      where,
       limit: rowCount,
       offset,
       include: [
