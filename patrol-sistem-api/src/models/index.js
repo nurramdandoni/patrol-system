@@ -7,9 +7,10 @@ const models = {
   Permission: require('./permission.model')(sequelize, DataTypes),
   RoleMenuPermission: require('./role_menu_permission.model')(sequelize, DataTypes),
   User: require('./user.model')(sequelize, DataTypes),
+  Location: require('./location.model')(sequelize, DataTypes),
 };
 
-const { Role, Menu, Permission, RoleMenuPermission, User } = models;
+const { Role, Menu, Permission, RoleMenuPermission, User, Location } = models;
 
 // Role ↔ User
 Role.hasMany(User, { foreignKey: 'role_id' });

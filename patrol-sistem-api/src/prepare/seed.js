@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { sequelize, Role, Permission, User } = require('../models');
+const { sequelize, Role, Permission, User, Menu } = require('../models');
 
 (async () => {
   try {
@@ -29,6 +29,18 @@ const { sequelize, Role, Permission, User } = require('../models');
       await Permission.findOrCreate({ where: { action: perm.action }, defaults: perm });
     }
     console.log('✅ Permissions seeded');
+
+    // --- MENU SEEDER ---
+    const menus = [
+      { name: 'Dashboard', path: '/dashboard', icon:'', index:'1'},
+      { name: 'Profile', path: '/profile', icon:'', index:'2',},
+      { name: 'Patrol', path: '/patrol', icon:'', index:'3'},
+      { name: 'Location', path: '/admin/location', icon:'', index:'4',},
+    ];
+    for (const men of menus) {
+      await Menu.findOrCreate({ where: { name: men.name }, defaults: men });
+    }
+    console.log('✅ Menus seeded');
 
     // --- ADMIN USER DEFAULT ---
     const adminRole = await Role.findOne({ where: { name: 'admin' } });
