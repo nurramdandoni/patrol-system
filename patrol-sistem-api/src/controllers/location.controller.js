@@ -1,4 +1,4 @@
-const { Location, RoleMenuPermission, Permission} = require('../models');
+const { Location } = require('../models');
 const { Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
 

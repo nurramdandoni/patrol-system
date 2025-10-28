@@ -36,6 +36,7 @@ const { sequelize, Role, Permission, User, Menu } = require('../models');
       { name: 'Profile', path: '/profile', icon:'', index:'2',},
       { name: 'Patrol', path: '/patrol', icon:'', index:'3'},
       { name: 'Location', path: '/admin/location', icon:'', index:'4',},
+      { name: 'Patrol Activity', path: '/admin/patrol-activity', icon:'', index:'5',},
     ];
     for (const men of menus) {
       await Menu.findOrCreate({ where: { name: men.name }, defaults: men });
