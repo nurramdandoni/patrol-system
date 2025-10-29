@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkpoint Patrol</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 40px;
+      background: #f7f7f7;
+    }
+    #reader {
+      width: 320px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      background: #fff;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+      background: #e3e3e3;
+      padding: 10px 15px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Kinenta Patrol</h2>
+  <div id="reader"></div>
+  <div id="result">Hasil scan akan muncul di sini...</div>
+
+  <script>
+    const html5QrCode = new Html5Qrcode("reader");
+    const resultElement = document.getElementById("result");
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        const cameraId = devices[0].id; // gunakan kamera pertama
+        html5QrCode.start(
+          cameraId,
+          { fps: 10, qrbox: 250 },
+          qrMessage => {
+            resultElement.innerText = "✅ QR Terdeteksi: " + qrMessage;
+            html5QrCode.stop(); // berhenti setelah berhasil scan
+            // contoh kirim hasil ke backend
+            fetch("/api/scan-result", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ qr_data: qrMessage })
+            });
+          },
+          err => { /* abaikan error scan kecil */ }
+        );
+      } else {
+        resultElement.innerText = "Tidak ada kamera yang terdeteksi.";
+      }
+    }).catch(err => {
+      resultElement.innerText = "Tidak bisa mengakses kamera: " + err;
+    });
+  </script>
+</body>
+</html>

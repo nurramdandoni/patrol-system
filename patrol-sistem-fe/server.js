@@ -10,8 +10,8 @@ app.use(express.static(path.join(__dirname, 'public'))); // serve file di folder
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/signin', 'signin.html'));
 });
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/dashbord', 'dashboard.html'));
+app.get('/patrol-activity', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/patrol-activity', 'index.html'));
 });
 app.get('/scanner', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'scanner.html'));

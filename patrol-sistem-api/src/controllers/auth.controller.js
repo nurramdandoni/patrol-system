@@ -60,7 +60,6 @@ exports.login = async (req, res) => {
         });
       }
     }
-    console.log(menupPermission);
 
     res.json({
       message: 'Login berhasil',

@@ -1,0 +1,9 @@
+authtoken: 2G4sysNtrhbM6l50F9wENjlMVJH_7hKBBCRDHhYP5m5vVtxYq
+
+tunnels:
+  frontend:
+    addr: 5050
+    proto: http
+  backend:
+    addr: 8080
+    proto: http

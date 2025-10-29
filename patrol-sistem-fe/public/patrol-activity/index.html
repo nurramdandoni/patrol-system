@@ -110,7 +110,7 @@
     <!-- Untuk desktop tetap di kanan atas -->
     <div class="navbar-nav d-none d-md-block position-absolute end-0 top-0 pe-3">
       <div class="nav-item text-nowrap">
-        <a class="nav-link px-3 text-white logout-btn" style="cursor: pointer;" ref="#">Logout</a>
+        <a class="nav-link px-3 text-white logout-btn" style="cursor: pointer;" ref="#">Logout (<span id="role"></span>)</a>
       </div>
     </div>
   </header>
@@ -210,6 +210,8 @@
       window.location.href = '/';
     });
 
+    const role = localStorage.getItem('role');
+    $('#role').text(role);
     const menus = JSON.parse(localStorage.getItem('menus'));
     let menusHtml = '';
     menus.forEach(menu => {
@@ -222,10 +224,11 @@
     });
     $('#menus-data').html(menusHtml);
 
-    fetch('http://localhost:5050/patrol/list', {
+    fetch('https://0fd0cf322282.ngrok-free.app/patrol/list', {
       method: 'GET',
       headers: {
-        'Authorization': 'Bearer ' + localStorage.getItem('token')
+        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+        'ngrok-skip-browser-warning': 'true'
       }
     })
     .then(async (response) => {
@@ -253,7 +256,7 @@
               ${
                 item.patrol_activity.length > 0
                   ? item.patrol_activity[0].check_image && item.patrol_activity[0].check_image.trim() !== ''
-                    ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.patrol_activity[0].check_image}')">
+                    ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('https://0fd0cf322282.ngrok-free.app/${item.patrol_activity[0].check_image}')">
                         <i class="bi bi-eye-fill"></i> onCapture
                       </span>`
                     : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
@@ -282,10 +285,44 @@
         alert('Tidak ada gambar untuk dilihat.');
         return;
       }
-      const previewImage = document.getElementById('previewImage');
-      previewImage.src = url;
+
+      // Tampilkan modal terlebih dahulu
       const modal = new bootstrap.Modal(document.getElementById('imageModal'));
       modal.show();
+      
+      const previewImage = document.getElementById('previewImage');
+      // Atur gambar sebagai loading sementara
+      previewImage.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=...'; // URL loading SVG, atau biarkan kosong
+
+      // Lakukan FETCH untuk mendapatkan gambar sebagai BLOB
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          // Masukkan header di sini!
+          'ngrok-skip-browser-warning': 'true'
+        }
+      })
+      .then(response => {
+        // Jika respons bukan gambar, atau ada masalah (misalnya ngrok tetap memblokir)
+        if (!response.ok) {
+            throw new Error('Gagal memuat gambar dari server: ' + response.status);
+        }
+        // Dapatkan data gambar sebagai Blob
+        return response.blob(); 
+      })
+      .then(imageBlob => {
+        // Buat URL Objek yang bisa digunakan oleh tag <img>
+        const imageObjectURL = URL.createObjectURL(imageBlob);
+        
+        // Ganti src gambar dengan URL Objek Blob
+        previewImage.src = imageObjectURL;
+      })
+      .catch(error => {
+        console.error('Error memuat gambar:', error);
+        alert('❌ Gambar gagal dimuat. Coba refresh atau klik "Visit Site" di halaman ngrok.');
+        // Sembunyikan modal jika gagal
+        modal.hide();
+      });
     }
 
   </script>
