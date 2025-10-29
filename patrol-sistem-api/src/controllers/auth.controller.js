@@ -55,6 +55,7 @@ exports.login = async (req, res) => {
         menus.push({
           menu_id:menu[i].id,
           menu_name:menu[i].name,
+          menu_path:menu[i].path,
           menu_permission:permisionData
         });
       }
