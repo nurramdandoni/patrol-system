@@ -5,14 +5,6 @@ const { json, Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
 const { now } = require('sequelize/lib/utils');
 
-exports.generateQr = async (req, res) => {
-    // Generate QR
-    const { location_id } = req.body;
-    const QrLocation = jwtUtils.generateToken({
-          location_id: location_id
-    });
-    res.json({token_location: QrLocation});
-}
 exports.readQr = async (req, res) => {
     const { token_location } = req.body;
     const payload = jwtUtils.verifyToken(token_location);
@@ -82,7 +74,7 @@ exports.list = async (req, res) => {
   }
 };
 exports.checking = async (req, res) => {
-    const menuId = 3;                       // /admin/location
+    const menuId = 5;                       // /admin/location
     const permissionId = [2];               // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);

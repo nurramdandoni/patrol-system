@@ -7,5 +7,6 @@ router.get('/location', guard.verifyAuth, locationController.getAll);
 router.get('/location/:id', guard.verifyAuth, locationController.getById);
 router.post('/location', guard.verifyAuth, locationController.create);
 router.put('/location/:id', guard.verifyAuth, locationController.update);
+router.post('/generateQr', guard.verifyAuth, locationController.generateQr);
 
 module.exports = router;

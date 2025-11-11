@@ -11,7 +11,7 @@
 </script>
 <header class="navbar navbar-dark sticky-top bg-dark shadow flex-md-nowrap p-0">
   <div class="container-fluid d-flex justify-content-between align-items-center">
-    <a class="navbar-brand px-3 fs-6" href="#">Kinenta Guard</a>
+    <a class="navbar-brand px-3 fs-6" href="#"><%= title %></a>
 
     <!-- Tombol menu di kanan -->
     <button class="navbar-toggler d-md-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu"
@@ -64,7 +64,7 @@
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div
         class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Aktivitas Patroli</h1>
+        <h1 class="h2"><%= titlePage %></h1>
         <div class="btn-toolbar mb-2 mb-md-0">
           <div class="btn-group me-2">
             <button type="button" class="btn btn-sm btn-outline-secondary">Report</button>
@@ -149,19 +149,19 @@
   });
   $('#menus-data').html(menusHtml);
 
-  fetch('http://localhost:5050/patrol/list', {
+  fetch('http://localhost:5050/admin/patrol-activity', {
     method: 'GET',
     headers: {
       'Authorization': 'Bearer ' + localStorage.getItem('token'),
-      'ngrok-skip-browser-warning': 'true'
     }
   })
     .then(async (response) => {
+        console.log(response);
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Server response:', errorText);
         if (response.status === 401) {
-          alert('❌ Akses ditolak: Token tidak valid atau kadaluarsa');
+          alert('❌ '+errorText + ' On Menu Patrol Activity');
           // Redirect ke halaman login
           window.location.href = '/';
         } else {
@@ -175,22 +175,22 @@
         tableBody += `
           <tr>
             <td>${index + 1}</td>
-            <td>${item.patrol_activity.length > 0 ? item.patrol_activity[0].check_date : '-'}</td>
-            <td>${item.name}</td>
+            <td>${item.check_date != null ? item.check_date : '-'}</td>
+            <td>${item.location.name}</td>
             <td>
-              ${item.patrol_activity.length > 0
-            ? item.patrol_activity[0].check_image && item.patrol_activity[0].check_image.trim() !== ''
-              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.patrol_activity[0].check_image}')">
+              ${item.check_image != null
+            ? item.check_image && item.check_image.trim() !== ''
+              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.check_image}')">
                         <i class="bi bi-eye-fill"></i> onCapture
                       </span>`
               : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
             : '<span class="badge bg-secondary">-</span>'
           }
             </td>
-            <td>${item.patrol_activity.length > 0 ? item.patrol_activity[0].check_notes : '-'}</td>
+            <td>${item.check_notes != null? item.check_notes : '-'}</td>
             <td>
-              ${item.patrol_activity.length > 0
-            ? item.patrol_activity[0].check_status == 1
+              ${item.check_image != null
+            ? item.check_status == 1
               ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Checked</span>'
               : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
             : '<span class="badge bg-secondary">-</span>'

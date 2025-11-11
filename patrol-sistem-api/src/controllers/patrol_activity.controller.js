@@ -6,7 +6,7 @@ const checkPermission = require('../utils/checkPermission');
 
 exports.patrolActivity = async (req, res) => {
   try {
-    const menuId = 5;                       // /admin/location
+    const menuId = 4;                       // /admin/location
     const permissionId = [1];               // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);

@@ -19,8 +19,16 @@ app.get('/', (req, res) => {
   res.render('signin', { title: 'Sign In Page' });
 });
 
-app.get('/dashboard', (req, res) => {
-  res.render('dashboard', { title: 'Dashboard' });
+app.get('/location', (req, res) => {
+  res.render('location', { title: 'Security Kinenta' , titlePage: 'Location' });
+});
+
+app.get('/patrol-activity', (req, res) => {
+  res.render('patrol-activity', { title: 'Security Kinenta' , titlePage: 'Patrol Activity' });
+});
+
+app.get('/patrol-list', (req, res) => {
+  res.render('patrol-list', { title: 'Security Kinenta' , titlePage: 'Patrol List' });
 });
 
 app.get('/scanner', (req, res) => {
