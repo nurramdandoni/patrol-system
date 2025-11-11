@@ -80,11 +80,10 @@
           <thead>
             <tr>
               <th scope="col">#</th>
-              <th scope="col">Tanggal</th>
-              <th scope="col">Lokasi</th>
+              <th scope="col">Nama Lokasi</th>
               <th scope="col">Foto</th>
-              <th scope="col">Catatan</th>
               <th scope="col">Status</th>
+              <th scope="col">QR Code</th>
             </tr>
           </thead>
           <tbody id="patrol-data">
@@ -174,27 +173,28 @@
       data.data.forEach((item, index) => {
         tableBody += `
           <tr>
-            <td>${index + 1}</td>
-            <td>${item.patrol_activity.length > 0 ? item.patrol_activity[0].check_date : '-'}</td>
+            <td><input type="checkbox" ${item.status != 1 ? 'disabled' : ''}/> &nbsp;${index + 1}</td>
             <td>${item.name}</td>
             <td>
-              ${item.patrol_activity.length > 0
-            ? item.patrol_activity[0].check_image && item.patrol_activity[0].check_image.trim() !== ''
-              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.patrol_activity[0].check_image}')">
+              ${item.images != null
+            ? item.images && item.images.trim() !== ''
+              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.images}')">
                         <i class="bi bi-eye-fill"></i> onCapture
                       </span>`
               : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
             : '<span class="badge bg-secondary">-</span>'
           }
             </td>
-            <td>${item.patrol_activity.length > 0 ? item.patrol_activity[0].check_notes : '-'}</td>
             <td>
-              ${item.patrol_activity.length > 0
-            ? item.patrol_activity[0].check_status == 1
-              ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Checked</span>'
-              : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
+              ${item.status != null
+            ? item.status == 1
+              ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Active</span>'
+              : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Non Active</span>'
             : '<span class="badge bg-secondary">-</span>'
           }
+            </td>
+            <td>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(item.token_location)}&size=30x30" alt="QR" />
             </td>
           </tr>
         `;
