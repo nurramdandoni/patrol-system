@@ -1,7 +1,14 @@
-const bcrypt = require('bcryptjs');
-const { User, Role, Menu, RoleMenuPermission, Permission } = require('../models');
-const jwtUtils = require('../utils/jwt');
-const { json } = require('sequelize');
+const bcrypt = require("bcryptjs");
+const {
+  User,
+  Role,
+  Menu,
+  RoleMenuPermission,
+  Permission,
+  Employee,
+} = require("../models");
+const jwtUtils = require("../utils/jwt");
+const { json } = require("sequelize");
 
 exports.login = async (req, res) => {
   try {
@@ -10,19 +17,18 @@ exports.login = async (req, res) => {
     const user = await User.findOne({
       where: { username },
       include: [
-        {
-          model: Role
-        },
+        { model: Employee }, 
+        { model: Role }
       ],
     });
 
     if (!user) {
-      return res.status(404).json({ message: 'User tidak ditemukan' });
+      return res.status(404).json({ message: "User tidak ditemukan" });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(401).json({ message: 'Password salah' });
+      return res.status(401).json({ message: "Password salah" });
     }
 
     // Generate token
@@ -37,55 +43,58 @@ exports.login = async (req, res) => {
     let menus = [];
     const menu = await Menu.findAll();
     const menupPermission = await RoleMenuPermission.findAll({
-      where: {role_id: user.role.id},
-      include:[{
-        model:Permission
-      }]
+      where: { role_id: user.role.id },
+      include: [
+        {
+          model: Permission,
+        },
+      ],
     });
-    for(let i=0; i < menu.length ; i++){
+    for (let i = 0; i < menu.length; i++) {
       let permisionData = [];
       let add = false;
-      for(let j=0 ; j < menupPermission.length ; j++){
-        if(menu[i].id == menupPermission[j].menu_id){
+      for (let j = 0; j < menupPermission.length; j++) {
+        if (menu[i].id == menupPermission[j].menu_id) {
           permisionData.push(menupPermission[j].permission.action);
           add = true;
         }
       }
-      if(add){
+      if (add) {
         menus.push({
-          menu_id:menu[i].id,
-          menu_name:menu[i].name,
-          menu_path:menu[i].path,
-          menu_permission:permisionData
+          menu_id: menu[i].id,
+          menu_name: menu[i].name,
+          menu_path: menu[i].path,
+          menu_permission: permisionData,
         });
       }
     }
 
     res.json({
-      message: 'Login berhasil',
+      message: "Login berhasil",
       token,
       user: {
         id: user.id,
         username: user.username,
+        employee: user.employee,
         role: user.role?.name,
         menus,
       },
     });
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Terjadi kesalahan server' });
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Terjadi kesalahan server" });
   }
 };
 
 exports.validateToken = async (req, res) => {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) return res.status(401).json({ message: 'No token' });
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return res.status(401).json({ message: "No token" });
 
   try {
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
     const decoded = jwtUtils.verifyToken(token);
     res.json({ valid: true, decoded });
   } catch (err) {
-    res.status(401).json({ valid: false, message: 'Token tidak valid' });
+    res.status(401).json({ valid: false, message: "Token tidak valid" });
   }
-}
+};

@@ -9,9 +9,14 @@ const models = {
   User: require('./user.model')(sequelize, DataTypes),
   Location: require('./location.model')(sequelize, DataTypes),
   PatrolActivity: require('./patrol_activity.model')(sequelize, DataTypes),
+  Employee: require('./employee.model')(sequelize, DataTypes),
 };
 
-const { Role, Menu, Permission, RoleMenuPermission, User, Location, PatrolActivity } = models;
+const { Role, Menu, Permission, RoleMenuPermission, User, Location, PatrolActivity, Employee } = models;
+
+// Employee ↔ User
+User.hasOne(Employee, { foreignKey: 'user_id' });
+Employee.belongsTo(User, { foreignKey: 'user_id' });
 
 // Role ↔ User
 Role.hasMany(User, { foreignKey: 'role_id' });
