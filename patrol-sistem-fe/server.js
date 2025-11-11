@@ -1,24 +1,34 @@
 const express = require('express');
+const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
 const app = express();
 
-// Middleware bawaan
+// ====== Konfigurasi EJS + Layout ======
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(expressLayouts);
+app.set('layout', 'layouts/main'); // default layout
+
+// ====== Middleware ======
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // serve file di folder public
+app.use(express.urlencoded({ extended: true })); // penting buat form POST
+app.use(express.static(path.join(__dirname, 'public'))); // folder public untuk CSS/JS/img
 
-// Endpoint root
+// ====== Routing ======
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/signin', 'signin.html'));
-});
-app.get('/patrol-activity', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/patrol-activity', 'index.html'));
-});
-app.get('/scanner', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'scanner.html'));
+  res.render('signin', { title: 'Sign In Page' });
 });
 
-// Jalankan server
-const PORT = 4000;
+app.get('/dashboard', (req, res) => {
+  res.render('dashboard', { title: 'Dashboard' });
+});
+
+app.get('/scanner', (req, res) => {
+  res.render('scanner', { title: 'Scanner' });
+});
+
+// ====== Jalankan Server ======
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`Server jalan di http://localhost:${PORT}`);
+  console.log(`✅ Frontend running at http://localhost:${PORT}`);
 });

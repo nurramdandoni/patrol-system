@@ -34,6 +34,12 @@
   <h2>Kinenta Patrol</h2>
   <div id="reader"></div>
   <div id="result">Hasil scan akan muncul di sini...</div>
+  <div>
+    <input type="hidden" id="token_location">
+    <input type="text" class="form-control" id="notes" placeholder="Catatan ....">
+  </div>
+  <div><button id="submit-data">Submit</button></div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
   <script>
     const html5QrCode = new Html5Qrcode("reader");
@@ -47,13 +53,8 @@
           { fps: 10, qrbox: 250 },
           qrMessage => {
             resultElement.innerText = "✅ QR Terdeteksi: " + qrMessage;
+            $('#token_location').val(qrMessage);
             html5QrCode.stop(); // berhenti setelah berhasil scan
-            // contoh kirim hasil ke backend
-            fetch("/api/scan-result", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ qr_data: qrMessage })
-            });
           },
           err => { /* abaikan error scan kecil */ }
         );
@@ -62,6 +63,26 @@
       }
     }).catch(err => {
       resultElement.innerText = "Tidak bisa mengakses kamera: " + err;
+    });
+
+    $('#submit-data').click(function(){
+      const token_location = $('#token_location').val();
+      const notes = $('#notes').val();
+      fetch("http://localhost:5050/patrol/check", {
+        method: "POST",
+        headers: { 
+          'Authorization': 'Bearer ' + localStorage.getItem('token'),
+          'Content-Type': "application/json" 
+        },
+        body: JSON.stringify({ token_location: token_location, notes: notes,file_images:"" })
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert('Data berhasil disubmit');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
     });
   </script>
 </body>

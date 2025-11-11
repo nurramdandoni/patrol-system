@@ -71,7 +71,7 @@
 
     
     <!-- Custom styles for this template -->
-    <link href="signin/signin.css" rel="stylesheet">
+    <link href="../assets/signin.css" rel="stylesheet">
   </head>
   <body class="text-center">
     
@@ -81,30 +81,30 @@
     <h1 class="h3 mb-3 fw-normal">Kineneta Guard</h1>
 
     <div class="form-floating">
-      <input type="email" class="form-control" id="floatingInput" placeholder="username">
-      <label for="floatingInput">Username</label>
+      <input type="text" class="form-control" id="username" placeholder="Username">
+      <label for="username">Username</label>
     </div>
     <div class="form-floating">
-      <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
-      <label for="floatingPassword">Password</label>
+      <input type="password" class="form-control" id="password" placeholder="Password">
+      <label for="password">Password</label>
     </div>
 
-    <button class="w-100 btn btn-lg btn-primary" id="login">Login</button>
+    <button type="button" class="w-100 btn btn-lg btn-primary" id="login">Login</button>
     <p class="mt-5 mb-3 text-muted">&copy; 2025 - Support By Paylite</p>
   </form>
 </main>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $('#login').click(function(){
-    fetch('https://0fd0cf322282.ngrok-free.app/auth/login', {
+    fetch('http://localhost:5050/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true'
       },
       body: JSON.stringify({
-        username: $('#floatingInput').val(),
-        password: $('#floatingPassword').val()
+        username: $('#username').val(),
+        password: $('#password').val()
       })
     })
     .then(async (response) => {
@@ -130,7 +130,7 @@
       localStorage.setItem('role', data.user.role);
       localStorage.setItem('menus', JSON.stringify(data.user.menus));
       alert('✅ Login berhasil');
-      window.location.href = '/patrol-activity';
+      window.location.href = '/dashboard';
     }).catch(error => {
       console.error('Error:', error);
     });

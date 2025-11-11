@@ -76,3 +76,16 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: 'Terjadi kesalahan server' });
   }
 };
+
+exports.validateToken = async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(401).json({ message: 'No token' });
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwtUtils.verifyToken(token);
+    res.json({ valid: true, decoded });
+  } catch (err) {
+    res.status(401).json({ valid: false, message: 'Token tidak valid' });
+  }
+}

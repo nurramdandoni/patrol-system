@@ -11,6 +11,7 @@ const { sequelize, Role, Permission, User, Menu } = require('../models');
       { name: 'admin', description: 'Full access to all menus and permissions' },
       { name: 'supervisor', description: 'Can view and edit limited data' },
       { name: 'user', description: 'Read-only access' },
+      { name: 'security', description: 'Access View and Insert Data Checking' },
     ];
     for (const role of roles) {
       await Role.findOrCreate({ where: { name: role.name }, defaults: role });
