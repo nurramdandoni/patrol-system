@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,12 +15,14 @@
       margin-top: 40px;
       background: #f7f7f7;
     }
+
     #reader {
       width: 320px;
       border: 2px solid #333;
       border-radius: 10px;
       background: #fff;
     }
+
     #result {
       margin-top: 20px;
       font-size: 18px;
@@ -30,6 +33,7 @@
     }
   </style>
 </head>
+
 <body>
   <h2>Kinenta Patrol</h2>
   <div id="reader"></div>
@@ -65,25 +69,42 @@
       resultElement.innerText = "Tidak bisa mengakses kamera: " + err;
     });
 
-    $('#submit-data').click(function(){
+    $('#submit-data').click(function () {
       const token_location = $('#token_location').val();
       const notes = $('#notes').val();
+
       fetch("http://localhost:5050/patrol/check", {
         method: "POST",
-        headers: { 
+        headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token'),
-          'Content-Type': "application/json" 
+          'Content-Type': "application/json"
         },
-        body: JSON.stringify({ token_location: token_location, notes: notes,file_images:"" })
+        body: JSON.stringify({ token_location, notes, file_images: "" })
       })
-      .then(response => response.json())
-      .then(data => {
-        alert('Data berhasil disubmit');
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
+        .then(async (response) => {
+          const data = await response.json();
+
+          if (!response.ok) { // 💥 kalau status bukan 2xx
+            throw new Error(data.message || 'Gagal mengirim data');
+          }
+
+          alert('✅ ' + data.message);
+          window.location.href = "/patrol-list";
+        })
+        .catch(error => {
+          alert('❌ ' + error.message);
+          // Kalau token invalid, arahkan ke login
+          if (error.message.toLowerCase().includes("access") ||
+            error.message.toLowerCase().includes("token")) {
+            localStorage.clear();
+            window.location.href = "/patrol-list";
+          } else {
+            window.location.href = "/patrol-list";
+          }
+        });
     });
+
   </script>
 </body>
+
 </html>

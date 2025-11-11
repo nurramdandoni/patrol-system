@@ -83,10 +83,12 @@ const authRoutes = require('./routes/auth.routes');
 const patrolRoutes = require('./routes/patrol.routes')
 const locationRoutes = require('./routes/location.routes');
 const patrolActivityRoutes = require('./routes/patrol_activity.routes');
+const roleRoutes = require('./routes/role.routes');
 // const dashboardRoutes = require('./routes/dashboard.routes');
 
 app.use('/auth', authRoutes);
 app.use('/admin', locationRoutes);
+app.use('/admin', roleRoutes);
 app.use('/admin', patrolActivityRoutes);
 app.use('/patrol', patrolRoutes);
 // app.use('/dashboard', dashboardRoutes);
