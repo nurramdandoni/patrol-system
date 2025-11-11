@@ -2,250 +2,289 @@
 <link href="../assets/dashboard.css" rel="stylesheet">
 
 <script>
-  // 🔒 Cek apakah token ada di localStorage
-  const token = localStorage.getItem('token');
-  if (!token) {
-    // Kalau tidak ada token, redirect ke halaman login
-    window.location.href = '/';
-  }
+    // 🔒 Cek apakah token ada di localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+        // Kalau tidak ada token, redirect ke halaman login
+        window.location.href = '/';
+    }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <header class="navbar navbar-dark sticky-top bg-dark shadow flex-md-nowrap p-0">
-  <div class="container-fluid d-flex justify-content-between align-items-center">
-    <a class="navbar-brand px-3 fs-6" href="#"><%= title %></a>
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+        <a class="navbar-brand px-3 fs-6" href="#">
+            <%= title %>
+        </a>
 
-    <!-- Tombol menu di kanan -->
-    <button class="navbar-toggler d-md-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu"
-      aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-  </div>
-
-  <!-- Sign out di bawah -->
-  <div class="bg-dark w-100 d-md-none text-end pe-3 pb-2">
-    <a class="nav-link text-white logout-btn" style="cursor: pointer;" href="#">Logout</a>
-  </div>
-
-  <!-- Untuk desktop tetap di kanan atas -->
-  <div class="navbar-nav d-none d-md-block position-absolute end-0 top-0 pe-3">
-    <div class="nav-item text-nowrap">
-      <a class="nav-link px-3 text-white logout-btn" style="cursor: pointer;" ref="#">Logout (<span
-          id="role"></span>)</a>
+        <!-- Tombol menu di kanan -->
+        <button class="navbar-toggler d-md-none me-2" type="button" data-bs-toggle="collapse"
+            data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
     </div>
-  </div>
+
+    <!-- Sign out di bawah -->
+    <div class="bg-dark w-100 d-md-none text-end pe-3 pb-2">
+        <a class="nav-link text-white logout-btn" style="cursor: pointer;" href="#">Logout</a>
+    </div>
+
+    <!-- Untuk desktop tetap di kanan atas -->
+    <div class="navbar-nav d-none d-md-block position-absolute end-0 top-0 pe-3">
+        <div class="nav-item text-nowrap">
+            <a class="nav-link px-3 text-white logout-btn" style="cursor: pointer;" ref="#">Logout (<span
+                    id="role"></span>)</a>
+        </div>
+    </div>
 </header>
 
 
 <!-- Modal Preview Gambar -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-center">
-      <div class="modal-body">
-        <img id="previewImage" src="" alt="Foto Patrol" class="img-fluid rounded">
-      </div>
-      <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
-      </div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-center">
+            <div class="modal-body">
+                <img id="previewImage" src="" alt="Foto Patrol" class="img-fluid rounded">
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <div class="container-fluid">
-  <div class="row">
-    <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-      <div class="position-sticky pt-3 sidebar-sticky">
-        <ul class="nav flex-column">
-          <div id="menus-data">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3 sidebar-sticky">
+                <ul class="nav flex-column">
+                    <div id="menus-data">
 
-          </div>
-        </ul>
-      </div>
-    </nav>
-    <!-- awal main -->
-    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-      <div
-        class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2"><%= titlePage %></h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-          <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Report</button>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
-            <span data-feather="calendar" class="align-text-bottom"></span>
-            <span id="tanggal"></span>
-          </button>
-        </div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-striped table-sm">
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Tanggal</th>
-              <th scope="col">Lokasi</th>
-              <th scope="col">Foto</th>
-              <th scope="col">Catatan</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody id="patrol-data">
-            <tr>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </main>
-    <!-- akhir main -->
-  </div>
+                    </div>
+                </ul>
+            </div>
+        </nav>
+        <!-- awal main -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div
+                class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">
+                    <%= titlePage %>
+                </h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary">Report</button>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+                        <!-- <span data-feather="calendar" class="align-text-bottom"></span> -->
+                        <input type="date" class="tanggal" id="from"> To <input type="date" class="tanggal" id="to">
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Tanggal</th>
+                            <th scope="col">Lokasi</th>
+                            <th scope="col">Foto</th>
+                            <th scope="col">Catatan</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patrol-data">
+                        <tr>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+        <!-- akhir main -->
+    </div>
 </div>
 
 
 <script src="../assets/dist/js/bootstrap.bundle.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js"
-  integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
+    integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE"
+    crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"
-  integrity="sha384-zNy6FEbO50N+Cg5wap8IKA4M/ZnLJgzc6w2NqACZaK0u0FXfOWRRJOnQtpZun8ha" crossorigin="anonymous"></script>
+    integrity="sha384-zNy6FEbO50N+Cg5wap8IKA4M/ZnLJgzc6w2NqACZaK0u0FXfOWRRJOnQtpZun8ha"
+    crossorigin="anonymous"></script>
 <script src="dashboard.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  // Inisialisasi feather icon
-  feather.replace();
+    // Set default tanggal hari ini di kedua input date
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date();
+        const formatDate = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
 
-  // Buat tanggal saat ini (format Indonesia)
-  const tanggalSekarang = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+        // Ambil elemen input date
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        if (dateInputs.length >= 2) {
+            const startInput = dateInputs[0];
+            const endInput = dateInputs[1];
 
-  // Tampilkan di span dengan id="tanggal"
-  document.getElementById('tanggal').textContent = tanggalSekarang;
+            startInput.value = formatDate(today);
+            endInput.value = formatDate(today);
+        }
+    });
+</script>
 
-  $('.logout-btn').click(function () {
-    // Hapus token dari localStorage
-    localStorage.removeItem('token');
-    // Redirect ke halaman login
-    window.location.href = '/';
-  });
+<script>
 
-  const role = localStorage.getItem('role');
-  $('#role').text(role);
-  const menus = JSON.parse(localStorage.getItem('menus'));
-  let menusHtml = '';
-  menus.forEach(menu => {
-    menusHtml += `<li class="nav-item">
+    $('.logout-btn').click(function () {
+        // Hapus token dari localStorage
+        localStorage.removeItem('token');
+        // Redirect ke halaman login
+        window.location.href = '/';
+    });
+
+    const role = localStorage.getItem('role');
+    $('#role').text(role);
+    const menus = JSON.parse(localStorage.getItem('menus'));
+    let menusHtml = '';
+    menus.forEach(menu => {
+        menusHtml += `<li class="nav-item">
             <a class="nav-link" aria-current="page" href="${menu.menu_path}">
               <span data-feather="home" class="align-text-bottom"></span>
               ${menu.menu_name}
             </a>
           </li>`;
-  });
-  $('#menus-data').html(menusHtml);
+    });
+    $('#menus-data').html(menusHtml);
+    loadPatrolData();
 
-  fetch('http://localhost:5050/admin/patrol-activity', {
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer ' + localStorage.getItem('token'),
-    }
-  })
-    .then(async (response) => {
-        console.log(response);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server response:', errorText);
-        if (response.status === 401) {
-          alert('❌ '+errorText + ' On Menu Patrol Activity');
-          // Redirect ke halaman login
-          window.location.href = '/';
-        } else {
-          alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+    $('.tanggal').change(function () {
+        const fromDate = document.getElementById('from').value;
+        const toDate = document.getElementById('to').value;
+        console.log('From:', fromDate, 'To:', toDate);
+        loadPatrolData();
+    });
+
+    function loadPatrolData() {
+        const fromDate = document.getElementById('from').value;
+        const toDate = document.getElementById('to').value;
+
+        fetch(`http://localhost:5050/admin/patrol-activity?date_from=${fromDate}&date_to=${toDate}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            }
+        })
+            .then(async (response) => {
+                console.log(response);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server response:', errorText);
+                    if (response.status === 401) {
+                        alert('❌ ' + errorText + ' On Menu Patrol Activity');
+                        // Redirect ke halaman login
+                        window.location.href = '/';
+                    } else {
+                        alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+                    }
+                    throw new Error('HTTP error ' + response.status);
+                }
+                let tableBody = '';
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.data) || data.data.length === 0) {
+                    document.getElementById('patrol-data').innerHTML = `
+                                    <tr><td colspan="6" class="text-center text-muted">Tidak ada data untuk rentang tanggal ini.</td></tr>`;
+                    return;
+                }
+
+                data.data.forEach((item, index) => {
+                    tableBody += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${item.check_date != null ? item.check_date : '-'}</td>
+              <td>${item.location.name}</td>
+              <td>
+                ${item.check_image != null
+                            ? item.check_image && item.check_image.trim() !== ''
+                                ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.check_image}')">
+                          <i class="bi bi-eye-fill"></i> onCapture
+                        </span>`
+                                : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
+                            : '<span class="badge bg-secondary">-</span>'
+                        }
+              </td>
+              <td>${item.check_notes != null ? item.check_notes : '-'}</td>
+              <td>
+                ${item.check_image != null
+                            ? item.check_status == 1
+                                ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Checked</span>'
+                                : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
+                            : '<span class="badge bg-secondary">-</span>'
+                        }
+              </td>
+            </tr>
+          `;
+                });
+                console.log(tableBody);
+                document.getElementById('patrol-data').innerHTML = tableBody;
+            })
+
+        function showImage(url) {
+            if (url == "") {
+                alert('Tidak ada gambar untuk dilihat.');
+                return;
+            }
+
+            // Tampilkan modal terlebih dahulu
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            modal.show();
+
+            const previewImage = document.getElementById('previewImage');
+            // Atur gambar sebagai loading sementara
+            previewImage.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=...'; // URL loading SVG, atau biarkan kosong
+
+            // Lakukan FETCH untuk mendapatkan gambar sebagai BLOB
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    // Masukkan header di sini!
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            })
+                .then(response => {
+                    // Jika respons bukan gambar, atau ada masalah (misalnya ngrok tetap memblokir)
+                    if (!response.ok) {
+                        throw new Error('Gagal memuat gambar dari server: ' + response.status);
+                    }
+                    // Dapatkan data gambar sebagai Blob
+                    return response.blob();
+                })
+                .then(imageBlob => {
+                    // Buat URL Objek yang bisa digunakan oleh tag <img>
+                    const imageObjectURL = URL.createObjectURL(imageBlob);
+
+                    // Ganti src gambar dengan URL Objek Blob
+                    previewImage.src = imageObjectURL;
+                })
+                .catch(error => {
+                    console.error('Error memuat gambar:', error);
+                    alert('❌ Gambar gagal dimuat. Coba refresh atau klik "Visit Site" di halaman ngrok.');
+                    // Sembunyikan modal jika gagal
+                    modal.hide();
+                });
         }
-        throw new Error('HTTP error ' + response.status);
-      }
-      let tableBody = '';
-      const data = await response.json();
-      data.data.forEach((item, index) => {
-        tableBody += `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${item.check_date != null ? item.check_date : '-'}</td>
-            <td>${item.location.name}</td>
-            <td>
-              ${item.check_image != null
-            ? item.check_image && item.check_image.trim() !== ''
-              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.check_image}')">
-                        <i class="bi bi-eye-fill"></i> onCapture
-                      </span>`
-              : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
-            : '<span class="badge bg-secondary">-</span>'
-          }
-            </td>
-            <td>${item.check_notes != null? item.check_notes : '-'}</td>
-            <td>
-              ${item.check_image != null
-            ? item.check_status == 1
-              ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Checked</span>'
-              : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
-            : '<span class="badge bg-secondary">-</span>'
-          }
-            </td>
-          </tr>
-        `;
-      });
-      console.log(tableBody);
-      document.getElementById('patrol-data').innerHTML = tableBody;
-    })
-
-  function showImage(url) {
-    if (url == "") {
-      alert('Tidak ada gambar untuk dilihat.');
-      return;
     }
 
-    // Tampilkan modal terlebih dahulu
-    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-    modal.show();
-
-    const previewImage = document.getElementById('previewImage');
-    // Atur gambar sebagai loading sementara
-    previewImage.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=...'; // URL loading SVG, atau biarkan kosong
-
-    // Lakukan FETCH untuk mendapatkan gambar sebagai BLOB
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        // Masukkan header di sini!
-        'ngrok-skip-browser-warning': 'true'
-      }
-    })
-      .then(response => {
-        // Jika respons bukan gambar, atau ada masalah (misalnya ngrok tetap memblokir)
-        if (!response.ok) {
-          throw new Error('Gagal memuat gambar dari server: ' + response.status);
-        }
-        // Dapatkan data gambar sebagai Blob
-        return response.blob();
-      })
-      .then(imageBlob => {
-        // Buat URL Objek yang bisa digunakan oleh tag <img>
-        const imageObjectURL = URL.createObjectURL(imageBlob);
-
-        // Ganti src gambar dengan URL Objek Blob
-        previewImage.src = imageObjectURL;
-      })
-      .catch(error => {
-        console.error('Error memuat gambar:', error);
-        alert('❌ Gambar gagal dimuat. Coba refresh atau klik "Visit Site" di halaman ngrok.');
-        // Sembunyikan modal jika gagal
-        modal.hide();
-      });
-  }
 
 </script>
