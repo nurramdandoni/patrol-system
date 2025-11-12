@@ -1,11 +1,12 @@
-const { Role } = require("../models");
+const { User } = require("../models");
 const { Op } = require("sequelize");
+const bcrypt = require("bcryptjs");
 const checkPermission = require("../utils/checkPermission");
 
 // 🔹 Get all with pagination
 exports.getAll = async (req, res) => {
   try {
-    const menuId = 8; // /admin/role
+    const menuId = 7; // /admin/user
     const permissionId = [1]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -20,7 +21,7 @@ exports.getAll = async (req, res) => {
     const rowCount = parseInt(req.query.rowCount) || 10;
     const offset = (page - 1) * rowCount;
 
-    const { count, rows } = await Role.findAndCountAll({
+    const { count, rows } = await User.findAndCountAll({
       limit: rowCount,
       offset,
     });
@@ -35,7 +36,7 @@ exports.getAll = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Terjadi Kesalahan Saat Menampilkan Data Role!",
+      message: "Terjadi Kesalahan Saat Menampilkan Data User!",
       data: err.message,
     });
   }
@@ -44,7 +45,7 @@ exports.getAll = async (req, res) => {
 // 🔹 Get by ID
 exports.getById = async (req, res) => {
   try {
-    const menuId = 8; // /admin/role
+    const menuId = 7; // /admin/user
     const permissionId = [1]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -55,7 +56,7 @@ exports.getById = async (req, res) => {
       });
     }
 
-    const data = await Role.findByPk(req.params.id);
+    const data = await User.findByPk(req.params.id);
     if (!data)
       return res.status(404).json({ message: "Data Tidak Ditemukan!" });
     res.json(data);
@@ -67,7 +68,7 @@ exports.getById = async (req, res) => {
 // 🔹 Create
 exports.create = async (req, res) => {
   try {
-    const menuId = 8; // /admin/role
+    const menuId = 7; // /admin/user
     const permissionId = [2]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -78,16 +79,18 @@ exports.create = async (req, res) => {
       });
     }
 
-    const data = await Role.create(req.body);
+    const { username, password, role_id } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const data = await User.create({ username, password: hashedPassword, role_id });
     res.status(201).json({
       status: "Success",
-      message: "Role berhasil ditambahkan!",
+      message: "User berhasil ditambahkan!",
       data,
     });
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Gagal menambahkan Role.",
+      message: "Gagal menambahkan User.",
       data: err.message,
     });
   }
@@ -96,7 +99,7 @@ exports.create = async (req, res) => {
 // 🔹 Update
 exports.update = async (req, res) => {
   try {
-    const menuId = 8; // /admin/role
+    const menuId = 7; // /admin/user
     const permissionId = [3]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -107,20 +110,22 @@ exports.update = async (req, res) => {
       });
     }
 
-    const data = await Role.findByPk(req.params.id);
+    const data = await User.findByPk(req.params.id);
     if (!data)
       return res.status(404).json({ message: "Data Tidak Ditemukan!" });
-
-    await data.update(req.body);
+    
+    const { username, password, role_id } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await data.update({ username, password: hashedPassword, role_id });
     res.json({
       status: "Success",
-      message: "Role berhasil diperbaharui!",
+      message: "User berhasil diperbaharui!",
       data,
     });
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Gagal memperbaharui Role.",
+      message: "Gagal memperbaharui User.",
       data: err.message,
     });
   }
@@ -129,14 +134,14 @@ exports.update = async (req, res) => {
 // 🔹 Delete
 exports.delete = async (req, res) => {
   try {
-    const data = await Role.findByPk(req.params.id);
+    const data = await User.findByPk(req.params.id);
     if (!data)
       return res.status(404).json({ message: "Data Tidak Ditemukan!" });
 
     await data.destroy();
     res.json({
       status: "Success",
-      message: "Role berhasil dihapus!",
+      message: "User berhasil dihapus!",
     });
   } catch (err) {
     res.status(500).json({
