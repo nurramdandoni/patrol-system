@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,14 +14,12 @@
       margin-top: 40px;
       background: #f7f7f7;
     }
-
-    #reader {
+    #reader, #camera-container {
       width: 320px;
       border: 2px solid #333;
       border-radius: 10px;
       background: #fff;
     }
-
     #result {
       margin-top: 20px;
       font-size: 18px;
@@ -31,36 +28,75 @@
       padding: 10px 15px;
       border-radius: 5px;
     }
+    video, canvas {
+      width: 320px;
+      height: 240px;
+      border-radius: 10px;
+    }
+    #preview {
+      margin-top: 10px;
+      border: 1px solid #999;
+      border-radius: 5px;
+      width: 320px;
+      display: none;
+    }
+    button {
+      margin: 10px;
+      padding: 8px 15px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #ccc;
+    }
   </style>
 </head>
-
 <body>
   <h2>Kinenta Patrol</h2>
   <div id="reader"></div>
   <div id="result">Hasil scan akan muncul di sini...</div>
+
   <div>
     <input type="hidden" id="token_location">
-    <input type="text" class="form-control" id="notes" placeholder="Catatan ....">
+    <input type="text" id="notes" placeholder="Catatan ....">
   </div>
-  <div><button id="submit-data">Submit</button></div>
+
+  <div id="camera-container">
+    <video id="camera" autoplay></video>
+    <canvas id="snapshot" style="display:none;"></canvas>
+    <img id="preview" />
+  </div>
+
+  <div>
+    <button id="start-camera">🎥 Nyalakan Kamera</button>
+    <button id="take-photo" disabled>📸 Ambil Foto</button>
+    <button id="submit-data">✅ Submit</button>
+  </div>
+
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
   <script>
     const html5QrCode = new Html5Qrcode("reader");
     const resultElement = document.getElementById("result");
+    let photoBase64 = "";
+    let stream = null;
 
+    // === SCANNER ===
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
-        const cameraId = devices[0].id; // gunakan kamera pertama
+        const cameraId = devices[0].id;
         html5QrCode.start(
           cameraId,
           { fps: 10, qrbox: 250 },
           qrMessage => {
             resultElement.innerText = "✅ QR Terdeteksi: " + qrMessage;
             $('#token_location').val(qrMessage);
-            html5QrCode.stop(); // berhenti setelah berhasil scan
+            html5QrCode.stop();
           },
-          err => { /* abaikan error scan kecil */ }
+          err => { }
         );
       } else {
         resultElement.innerText = "Tidak ada kamera yang terdeteksi.";
@@ -69,42 +105,66 @@
       resultElement.innerText = "Tidak bisa mengakses kamera: " + err;
     });
 
-    $('#submit-data').click(function () {
+    // === FOTO CAPTURE ===
+    const startBtn = document.getElementById('start-camera');
+    const takeBtn = document.getElementById('take-photo');
+    const video = document.getElementById('camera');
+    const canvas = document.getElementById('snapshot');
+    const preview = document.getElementById('preview');
+
+    startBtn.onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        takeBtn.disabled = false;
+      } catch (err) {
+        alert('Tidak bisa mengakses kamera: ' + err);
+      }
+    };
+
+    takeBtn.onclick = () => {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Konversi ke base64 JPG
+      photoBase64 = canvas.toDataURL('image/jpeg', 0.9);
+      preview.src = photoBase64;
+      preview.style.display = 'block';
+
+      // Matikan kamera setelah ambil foto
+      stream.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+      takeBtn.disabled = true;
+    };
+
+    // === SUBMIT KE SERVER ===
+    $('#submit-data').click(async function () {
       const token_location = $('#token_location').val();
       const notes = $('#notes').val();
 
-      fetch("http://localhost:5050/patrol/check", {
-        method: "POST",
-        headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token'),
-          'Content-Type': "application/json"
-        },
-        body: JSON.stringify({ token_location, notes, file_images: "" })
-      })
-        .then(async (response) => {
-          const data = await response.json();
-
-          if (!response.ok) { // 💥 kalau status bukan 2xx
-            throw new Error(data.message || 'Gagal mengirim data');
-          }
-
-          alert('✅ ' + data.message);
-          window.location.href = "/patrol-list";
-        })
-        .catch(error => {
-          alert('❌ ' + error.message);
-          // Kalau token invalid, arahkan ke login
-          if (error.message.toLowerCase().includes("access") ||
-            error.message.toLowerCase().includes("token")) {
-            localStorage.clear();
-            window.location.href = "/patrol-list";
-          } else {
-            window.location.href = "/patrol-list";
-          }
+      try {
+        const response = await fetch("http://localhost:5050/patrol/check", {
+          method: "POST",
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'Content-Type': "application/json"
+          },
+          body: JSON.stringify({ token_location, notes, file_images: photoBase64 })
         });
-    });
 
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.message || "Gagal submit");
+
+        alert("✅ " + data.message);
+        window.location.href = "/patrol-list";
+      } catch (err) {
+        alert("❌ " + err.message);
+        window.location.href = "/patrol-list";
+      }
+    });
   </script>
 </body>
-
 </html>

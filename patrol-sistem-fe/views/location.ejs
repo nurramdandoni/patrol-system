@@ -11,7 +11,9 @@
 </script>
 <header class="navbar navbar-dark sticky-top bg-dark shadow flex-md-nowrap p-0">
   <div class="container-fluid d-flex justify-content-between align-items-center">
-    <a class="navbar-brand px-3 fs-6" href="#"><%= title %></a>
+    <a class="navbar-brand px-3 fs-6" href="#">
+      <%= title %>
+    </a>
 
     <!-- Tombol menu di kanan -->
     <button class="navbar-toggler d-md-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu"
@@ -64,7 +66,9 @@
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div
         class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2"><%= titlePage %></h1>
+        <h1 class="h2">
+          <%= titlePage %>
+        </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
           <div class="btn-group me-2">
             <button type="button" class="btn btn-sm btn-outline-secondary">Report</button>
@@ -98,6 +102,13 @@
           </tbody>
         </table>
       </div>
+      <div class="mt-3">
+        <button id="btnPrintPDF" class="btn btn-primary btn-sm">🖨️ Cetak Barcode</button>
+      </div>
+      <div id="pdfContainer" class="mt-4 text-center">
+        <!-- PDF akan ditampilkan di sini -->
+      </div>
+
     </main>
     <!-- akhir main -->
   </div>
@@ -130,6 +141,9 @@
   $('.logout-btn').click(function () {
     // Hapus token dari localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('profile');
+    localStorage.removeItem('menus');
     // Redirect ke halaman login
     window.location.href = '/';
   });
@@ -160,7 +174,7 @@
         const errorText = await response.text();
         console.error('Server response:', errorText);
         if (response.status === 401) {
-          alert('❌ '+errorText + ' On Menu Location');
+          alert('❌ ' + errorText + ' On Menu Location');
           // Redirect ke halaman login
           window.location.href = '/';
         } else {
@@ -247,5 +261,53 @@
         modal.hide();
       });
   }
+</script>
+<script>
+document.getElementById('btnPrintPDF').addEventListener('click', async () => {
+  // Ambil semua checkbox yang dicentang
+  const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
 
+  if (checked.length === 0) {
+    alert('⚠️ Pilih minimal satu lokasi dulu!');
+    return;
+  }
+
+  // Buat array objek sesuai format { name, qr_value }
+  const selectedData = checked.map(cb => {
+    const row = cb.closest('tr');
+    const name = row.children[1].textContent.trim(); // kolom nama lokasi
+    const qrImg = row.querySelector('img'); // ambil tag <img> di kolom QR
+    // token ada di URL src
+    const qrSrc = qrImg.getAttribute('src');
+    const qrParam = new URL(qrSrc).searchParams.get('data'); // ambil nilai data= di URL QR
+    return { name, qr_value: qrParam };
+  });
+
+  console.log('Data dikirim ke backend:', selectedData);
+
+  // Kirim ke backend
+  const response = await fetch('http://localhost:5050/admin/pdf/location', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + localStorage.getItem('token'),
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    },
+    body: JSON.stringify({ data: selectedData })
+  });
+
+  if (!response.ok) {
+    alert('❌ Gagal generate PDF');
+    return;
+  }
+
+  // Terima PDF sebagai blob
+  const blob = await response.blob();
+  const pdfUrl = URL.createObjectURL(blob);
+
+  // Tampilkan PDF di bawah tabel
+  document.getElementById('pdfContainer').innerHTML = `
+    <embed src="${pdfUrl}" type="application/pdf" width="100%" height="600px" />
+  `;
+});
 </script>

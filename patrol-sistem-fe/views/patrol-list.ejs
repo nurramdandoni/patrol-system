@@ -132,6 +132,9 @@
   $('.logout-btn').click(function () {
     // Hapus token dari localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('profile');
+    localStorage.removeItem('menus');
     // Redirect ke halaman login
     window.location.href = '/';
   });

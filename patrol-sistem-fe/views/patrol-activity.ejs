@@ -149,6 +149,9 @@
     $('.logout-btn').click(function () {
         // Hapus token dari localStorage
         localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('profile');
+        localStorage.removeItem('menus');
         // Redirect ke halaman login
         window.location.href = '/';
     });
@@ -166,7 +169,6 @@
           </li>`;
     });
     $('#menus-data').html(menusHtml);
-    loadPatrolData();
 
     $('.tanggal').change(function () {
         const fromDate = document.getElementById('from').value;
@@ -285,6 +287,36 @@
                 });
         }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // === 1️⃣ Set default tanggal hari ini ===
+        const today = new Date();
+        const formatDate = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        const todayStr = formatDate(today);
+
+        // Ambil input date dan isi nilainya
+        const startInput = document.getElementById('from');
+        const endInput = document.getElementById('to');
+
+        if (startInput && endInput) {
+            startInput.value = todayStr;
+            endInput.value = todayStr;
+        }
+
+        // === 2️⃣ Setelah tanggal terisi, baru load data ===
+        loadPatrolData();
+
+        // === 3️⃣ Pas user ubah tanggal, reload data ===
+        $('.tanggal').change(function () {
+            loadPatrolData();
+        });
+    });
 
 
 </script>
