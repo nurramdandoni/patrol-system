@@ -86,6 +86,7 @@ const patrolActivityRoutes = require('./routes/patrol_activity.routes');
 const employeeRoutes = require('./routes/employee.routes');
 const userRoutes = require('./routes/user.routes');
 const roleRoutes = require('./routes/role.routes');
+const pdfRoutes = require('./routes/pdf.routes');
 // const dashboardRoutes = require('./routes/dashboard.routes');
 
 app.use('/auth', authRoutes);
@@ -93,6 +94,7 @@ app.use('/admin', locationRoutes);
 app.use('/admin', employeeRoutes);
 app.use('/admin', userRoutes);
 app.use('/admin', roleRoutes);
+app.use('/admin', pdfRoutes);
 app.use('/admin', patrolActivityRoutes);
 app.use('/patrol', patrolRoutes);
 // app.use('/dashboard', dashboardRoutes);
