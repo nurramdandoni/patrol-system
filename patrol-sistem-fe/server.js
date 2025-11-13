@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 
 // ====== Routing ======
 app.get('/', (req, res) => {
-  res.render('signin', { title: 'Sign In Page' });
+  res.render('signin/index', { title: 'Sign In Page' });
 });
 
 app.get('/location', (req, res) => {

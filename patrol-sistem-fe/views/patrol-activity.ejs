@@ -241,51 +241,51 @@
                 console.log(tableBody);
                 document.getElementById('patrol-data').innerHTML = tableBody;
             })
+    }
 
-        function showImage(url) {
-            if (url == "") {
-                alert('Tidak ada gambar untuk dilihat.');
-                return;
-            }
-
-            // Tampilkan modal terlebih dahulu
-            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-            modal.show();
-
-            const previewImage = document.getElementById('previewImage');
-            // Atur gambar sebagai loading sementara
-            previewImage.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=...'; // URL loading SVG, atau biarkan kosong
-
-            // Lakukan FETCH untuk mendapatkan gambar sebagai BLOB
-            fetch(url, {
-                method: 'GET',
-                headers: {
-                    // Masukkan header di sini!
-                    'ngrok-skip-browser-warning': 'true'
-                }
-            })
-                .then(response => {
-                    // Jika respons bukan gambar, atau ada masalah (misalnya ngrok tetap memblokir)
-                    if (!response.ok) {
-                        throw new Error('Gagal memuat gambar dari server: ' + response.status);
-                    }
-                    // Dapatkan data gambar sebagai Blob
-                    return response.blob();
-                })
-                .then(imageBlob => {
-                    // Buat URL Objek yang bisa digunakan oleh tag <img>
-                    const imageObjectURL = URL.createObjectURL(imageBlob);
-
-                    // Ganti src gambar dengan URL Objek Blob
-                    previewImage.src = imageObjectURL;
-                })
-                .catch(error => {
-                    console.error('Error memuat gambar:', error);
-                    alert('❌ Gambar gagal dimuat. Coba refresh atau klik "Visit Site" di halaman ngrok.');
-                    // Sembunyikan modal jika gagal
-                    modal.hide();
-                });
+    function showImage(url) {
+        if (url == "") {
+            alert('Tidak ada gambar untuk dilihat.');
+            return;
         }
+
+        // Tampilkan modal terlebih dahulu
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+
+        const previewImage = document.getElementById('previewImage');
+        // Atur gambar sebagai loading sementara
+        previewImage.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=...'; // URL loading SVG, atau biarkan kosong
+
+        // Lakukan FETCH untuk mendapatkan gambar sebagai BLOB
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                // Masukkan header di sini!
+                'ngrok-skip-browser-warning': 'true'
+            }
+        })
+            .then(response => {
+                // Jika respons bukan gambar, atau ada masalah (misalnya ngrok tetap memblokir)
+                if (!response.ok) {
+                    throw new Error('Gagal memuat gambar dari server: ' + response.status);
+                }
+                // Dapatkan data gambar sebagai Blob
+                return response.blob();
+            })
+            .then(imageBlob => {
+                // Buat URL Objek yang bisa digunakan oleh tag <img>
+                const imageObjectURL = URL.createObjectURL(imageBlob);
+
+                // Ganti src gambar dengan URL Objek Blob
+                previewImage.src = imageObjectURL;
+            })
+            .catch(error => {
+                console.error('Error memuat gambar:', error);
+                alert('❌ Gambar gagal dimuat. Coba refresh atau klik "Visit Site" di halaman ngrok.');
+                // Sembunyikan modal jika gagal
+                modal.hide();
+            });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
