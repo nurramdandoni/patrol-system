@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,245 +11,208 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-top: 40px;
+      margin-top: 30px;
       background: #f7f7f7;
     }
 
-    #reader,
-    #camera-container {
-      width: 320px;
+    h2 {
+      color: #007bff;
+      margin-bottom: 10px;
+    }
+
+    #camera-panel {
+      width: 340px;
+      background: white;
       border: 2px solid #333;
       border-radius: 10px;
-      background: #fff;
+      padding: 10px;
+      text-align: center;
     }
 
-    #result {
-      margin-top: 20px;
-      font-size: 18px;
-      color: #333;
-      background: #e3e3e3;
-      padding: 10px 15px;
-      border-radius: 5px;
-    }
-
-    video,
-    canvas {
+    #reader, video, canvas, #preview {
       width: 320px;
       height: 240px;
       border-radius: 10px;
     }
 
-    #preview {
-      margin-top: 10px;
-      border: 1px solid #999;
-      border-radius: 5px;
-      width: 320px;
+    #reader {
+      display: block;
+    }
+
+    #camera-container {
       display: none;
     }
 
+    #result {
+      margin-top: 10px;
+      font-size: 16px;
+      background: #e3e3e3;
+      padding: 8px 12px;
+      border-radius: 5px;
+      color: #333;
+    }
+
     button {
-      margin: 10px;
+      margin: 5px;
       padding: 8px 15px;
       border: none;
-      background: #007bff;
-      color: white;
       border-radius: 6px;
       cursor: pointer;
+      color: white;
+      font-weight: bold;
     }
 
-    button:disabled {
-      background: #ccc;
-    }
+    .btn-primary { background: #007bff; }
+    .btn-secondary { background: #6c757d; }
+    .btn-success { background: #28a745; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
 
-    .btn-secondary {
-      background: #6c757d;
-    }
-
-    .btn-success {
-      background: #28a745;
+    #notes {
+      width: 95%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-top: 10px;
     }
   </style>
 </head>
-
 <body>
-  <h2>Kinenta Patrol</h2>
-  <div id="reader"></div>
-  <div id="result">-</div>
 
-  <div style="width: 100%;margin-left: 15px;">
-    <input type="hidden" id="token_location">
-    <input style="width: 95%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" type="text" id="notes" placeholder="Catatan ....">
+  <h2>Kinenta Patrol</h2>
+
+  <div id="camera-panel">
+    <div id="reader"></div>
+
+    <div id="camera-container">
+      <video id="camera" autoplay playsinline></video>
+      <canvas id="snapshot" style="display:none;"></canvas>
+      <img id="preview" style="display:none; width:320px; height:auto; border-radius:8px; margin-top:8px;" />
+    </div>
   </div>
-  <div style="margin-top: 10px;" id="camera-container">
-    <video id="camera" autoplay playsinline></video>
-    <canvas id="snapshot" style="display:none;"></canvas>
-    <img id="preview" />
-  </div>
+
+  <div id="result">Silakan scan QR lokasi...</div>
+  <input type="hidden" id="token_location">
+  <input type="text" id="notes" placeholder="Catatan ....">
 
   <div>
-    <button class="btn-secondary" id="flip" style="width: 100%; display: none;">🔄 Ubah Kamera</button>
-    <button class="btn-primary" id="start-camera" style="width: 100%;">🎥 Nyalakan Kamera</button>
+    <button class="btn-secondary" id="flip" style="width: 100%; display:none;">🔄 Ubah Kamera</button>
     <button class="btn-primary" id="take-photo" disabled style="width: 100%;">📸 Ambil Foto</button>
-    <button class="btn-success" id="submit-data" style="width: 100%;">✅ Submit</button>
+    <button class="btn-success" id="submit-data" disabled style="width: 100%;">✅ Submit</button>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
   <script>
     const html5QrCode = new Html5Qrcode("reader");
     const resultElement = document.getElementById("result");
-    let photoBase64 = "";
+    const cameraContainer = document.getElementById("camera-container");
+    const readerDiv = document.getElementById("reader");
+
     let stream = null;
     let availableCameras = [];
     let currentCameraIndex = 0;
-    let facingMode = 'environment'; // Default belakang (untuk scan QR)
+    let photoBase64 = "";
+    let facingMode = "environment";
 
-    // === SCANNER ===
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        const cameraId = devices[0].id;
-        html5QrCode.start(
-          cameraId,
-          { fps: 10, qrbox: 250 },
-          qrMessage => {
-            resultElement.innerText = "✅ QR Terdeteksi";
-            $('#token_location').val(qrMessage);
-            html5QrCode.stop();
-          },
-          err => { }
-        );
-      } else {
-        resultElement.innerText = "Tidak ada kamera yang terdeteksi.";
-      }
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("snapshot");
+    const preview = document.getElementById("preview");
+    const flipBtn = document.getElementById("flip");
+    const takeBtn = document.getElementById("take-photo");
+    const submitBtn = document.getElementById("submit-data");
+
+    // === STEP 1: SCAN QR ===
+    Html5Qrcode.getCameras().then(async (devices) => {
+      if (!devices.length) throw new Error("Tidak ada kamera tersedia");
+
+      availableCameras = devices;
+      if (devices.length > 1) flipBtn.style.display = "block";
+
+      await startQrScanner(devices[currentCameraIndex].id);
     }).catch(err => {
       resultElement.innerText = "Tidak bisa mengakses kamera: " + err;
     });
 
-    // === GET AVAILABLE CAMERAS ===
-    async function getAvailableCameras() {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        availableCameras = devices.filter(device => device.kind === 'videoinput');
-        
-        // Show flip button only if multiple cameras
-        if (availableCameras.length > 1) {
-          document.getElementById('flip').style.display = 'block';
-        }
-        
-        return availableCameras;
-      } catch (err) {
-        console.error('Error getting cameras:', err);
-        return [];
-      }
+    async function startQrScanner(cameraId) {
+      await html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: 250 },
+        (qrMessage) => {
+          resultElement.innerText = "✅ QR Terdeteksi";
+          document.getElementById("token_location").value = qrMessage;
+          html5QrCode.stop();
+          switchToCameraMode();
+        },
+        () => {}
+      );
     }
 
-    // === START CAMERA ===
-    const startBtn = document.getElementById('start-camera');
-    const takeBtn = document.getElementById('take-photo');
-    const flipBtn = document.getElementById('flip');
-    const video = document.getElementById('camera');
-    const canvas = document.getElementById('snapshot');
-    const preview = document.getElementById('preview');
+    // === STEP 2: MODE FOTO ===
+    async function switchToCameraMode() {
+      readerDiv.style.display = "none";
+      cameraContainer.style.display = "block";
+      takeBtn.disabled = false;
+      submitBtn.disabled = false;
+      await startCamera();
+    }
 
     async function startCamera() {
       try {
-        // Stop existing stream
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-        }
-
-        // Get cameras if not already loaded
-        if (availableCameras.length === 0) {
-          await getAvailableCameras();
-        }
-
-        let constraints;
-        
-        if (availableCameras.length > 1) {
-          // Multiple cameras - use deviceId
-          const selectedCamera = availableCameras[currentCameraIndex];
-          constraints = {
-            video: {
-              deviceId: { exact: selectedCamera.deviceId },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          };
-        } else {
-          // Single camera or fallback - use facingMode
-          constraints = {
-            video: {
-              facingMode: facingMode,
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          };
-        }
-
+        if (stream) stream.getTracks().forEach(track => track.stop());
+        const constraints = {
+          video: availableCameras.length > 1
+            ? { deviceId: { exact: availableCameras[currentCameraIndex].id } }
+            : { facingMode }
+        };
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
-        takeBtn.disabled = false;
-        startBtn.textContent = '🔄 Restart Kamera';
-        
       } catch (err) {
-        console.error('Camera error:', err);
-        alert('Tidak bisa mengakses kamera: ' + err.message);
+        alert("Kamera gagal dinyalakan: " + err.message);
       }
     }
 
-    startBtn.onclick = startCamera;
-
-    // === FLIP CAMERA ===
     flipBtn.onclick = async () => {
       if (availableCameras.length > 1) {
-        // Cycle through available cameras
         currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-        await startCamera();
       } else {
-        // Fallback: toggle facingMode
-        facingMode = facingMode === 'environment' ? 'user' : 'environment';
+        facingMode = facingMode === "environment" ? "user" : "environment";
+      }
+
+      // Ubah mode tergantung yang aktif
+      if (readerDiv.style.display !== "none") {
+        await html5QrCode.stop();
+        await startQrScanner(availableCameras[currentCameraIndex].id);
+      } else {
         await startCamera();
       }
     };
 
-    // === TAKE PHOTO ===
+    // === STEP 3: AMBIL FOTO ===
     takeBtn.onclick = () => {
-      const context = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Convert to base64 JPG
-      photoBase64 = canvas.toDataURL('image/jpeg', 0.9);
+      photoBase64 = canvas.toDataURL("image/jpeg", 0.9);
       preview.src = photoBase64;
-      preview.style.display = 'block';
+      preview.style.display = "block";
 
-      // Stop camera after taking photo
       stream.getTracks().forEach(track => track.stop());
       video.srcObject = null;
       takeBtn.disabled = true;
-      startBtn.textContent = '🎥 Nyalakan Kamera';
+      submitBtn.disabled = false;
     };
 
-    // === SUBMIT TO SERVER ===
+    // === STEP 4: SUBMIT DATA ===
     $('#submit-data').click(async function () {
       const token_location = $('#token_location').val();
       const notes = $('#notes').val();
 
-      if (!token_location) {
-        alert('❌ Silakan scan QR Code terlebih dahulu!');
-        return;
-      }
-
-      if (!photoBase64) {
-        alert('❌ Silakan ambil foto terlebih dahulu!');
-        return;
-      }
+      if (!token_location) return alert('❌ Silakan scan QR terlebih dahulu!');
+      if (!photoBase64) return alert('❌ Silakan ambil foto dulu!');
 
       try {
-        // Replace with your actual API URL
         const API_URL = 'https://api.security-kinenta.paylite.co.id';
-        
         const response = await fetch(`${API_URL}/patrol/check`, {
           method: "POST",
           headers: {
@@ -261,17 +223,14 @@
         });
 
         const data = await response.json();
-
         if (!response.ok) throw new Error(data.message || "Gagal submit");
 
         alert("✅ " + data.message);
         window.location.href = "/patrol-list";
       } catch (err) {
         alert("❌ " + err.message);
-        console.error(err);
       }
     });
   </script>
 </body>
-
 </html>
