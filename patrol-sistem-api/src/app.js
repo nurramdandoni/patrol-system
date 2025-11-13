@@ -105,6 +105,56 @@ app.post(
   }
 );
 
+// API UPload File Base 64
+app.post('/upload-base64', guard.verifyAuth, async (req, res) => {
+  try {
+    const { base64Data } = req.body;
+
+    if (!base64Data) {
+      return res.status(400).json({ error: 'Base64 data tidak ditemukan' });
+    }
+
+    // Validasi format base64
+    const matches = base64Data.match(/^data:(image\/[a-zA-Z]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ error: 'Format base64 tidak valid' });
+    }
+
+    const mimeType = matches[1];
+    const imageData = matches[2];
+    const ext = mimeType.split('/')[1];
+
+    // Nama file acak (hash)
+    const sha1 = crypto
+      .createHash('sha1')
+      .update(Date.now().toString() + Math.random().toString())
+      .digest('hex');
+
+    const fileName = `${sha1}.${ext}`;
+    const uploadsDir = path.join(__dirname, '../uploads');
+    const filePath = path.join(uploadsDir, fileName);
+
+    // ✅ Pastikan folder uploads ada
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Simpan file
+    const buffer = Buffer.from(imageData, 'base64');
+    fs.writeFileSync(filePath, buffer);
+
+    return res.json({
+      folder: 'uploads',
+      fileName,
+      pathLocation: 'uploads/' + fileName,
+    });
+  } catch (error) {
+    console.error('Upload base64 error:', error);
+    return res.status(500).json({ error: 'Gagal upload file base64' });
+  }
+});
+
+
 app.get('/', (req, res) => res.send('RBAC Service Running'));
 
 const authRoutes = require('./routes/auth.routes');

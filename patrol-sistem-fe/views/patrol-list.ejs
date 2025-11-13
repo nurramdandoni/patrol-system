@@ -11,7 +11,9 @@
 </script>
 <header class="navbar navbar-dark sticky-top bg-dark shadow flex-md-nowrap p-0">
   <div class="container-fluid d-flex justify-content-between align-items-center">
-    <a class="navbar-brand px-3 fs-6" href="#"><%= title %></a>
+    <a class="navbar-brand px-3 fs-6" href="#">
+      <%= title %>
+    </a>
 
     <!-- Tombol menu di kanan -->
     <button class="navbar-toggler d-md-none me-2" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu"
@@ -64,7 +66,9 @@
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div
         class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2"><%= titlePage %></h1>
+        <h1 class="h2">
+          <%= titlePage %>
+        </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
           <div class="btn-group me-2">
             <!-- <button type="button" class="btn btn-sm btn-outline-secondary">Report</button> -->
@@ -165,7 +169,7 @@
         const errorText = await response.text();
         console.error('Server response:', errorText);
         if (response.status === 401) {
-          alert('❌ '+errorText + ' On Menu Patrol List');
+          alert('❌ ' + errorText + ' On Menu Patrol List');
           // Redirect ke halaman login
           window.location.href = '/';
         } else {
@@ -211,48 +215,64 @@
     })
 
   function showImage(url) {
-    if (url == "") {
+    if (!url) {
       alert('Tidak ada gambar untuk dilihat.');
       return;
     }
 
-    // Tampilkan modal terlebih dahulu
     const modal = new bootstrap.Modal(document.getElementById('imageModal'));
     modal.show();
 
     const previewImage = document.getElementById('previewImage');
-    // Atur gambar sebagai loading sementara
-    previewImage.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=...'; // URL loading SVG, atau biarkan kosong
+    previewImage.src = ''; // reset gambar lama
 
-    // Lakukan FETCH untuk mendapatkan gambar sebagai BLOB
-    fetch(url, {
-      method: 'GET',
-      headers: {
-        // Masukkan header di sini!
-        'ngrok-skip-browser-warning': 'true'
-      }
-    })
-      .then(response => {
-        // Jika respons bukan gambar, atau ada masalah (misalnya ngrok tetap memblokir)
-        if (!response.ok) {
-          throw new Error('Gagal memuat gambar dari server: ' + response.status);
-        }
-        // Dapatkan data gambar sebagai Blob
-        return response.blob();
-      })
-      .then(imageBlob => {
-        // Buat URL Objek yang bisa digunakan oleh tag <img>
-        const imageObjectURL = URL.createObjectURL(imageBlob);
+    // 🧠 Deteksi tipe URL
+    let type = 'unknown';
+    try {
+      const parsed = new URL(url);
+      const path = parsed.pathname.startsWith('/')
+        ? parsed.pathname.slice(1)
+        : parsed.pathname;
 
-        // Ganti src gambar dengan URL Objek Blob
-        previewImage.src = imageObjectURL;
+      if (path.startsWith('upload')) type = 'path';
+      else if (path.startsWith('data:image')) type = 'base64';
+    } catch (err) {
+      // Jika bukan URL valid, mungkin base64 langsung
+      if (url.startsWith('data:image')) type = 'base64';
+    }
+
+    // 🔥 Aksi berdasarkan tipe
+    if (type === 'base64') {
+      previewImage.src = url; // langsung tampilkan
+    } else if (type === 'path') {
+      // fetch dari server
+      fetch(url, {
+        method: 'GET',
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
       })
-      .catch(error => {
-        console.error('Error memuat gambar:', error);
-        alert('❌ Gambar gagal dimuat. Coba refresh atau klik "Visit Site" di halaman ngrok.');
-        // Sembunyikan modal jika gagal
-        modal.hide();
-      });
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Gagal memuat gambar dari server: ' + response.status);
+          }
+          return response.blob();
+        })
+        .then(imageBlob => {
+          const imageObjectURL = URL.createObjectURL(imageBlob);
+          previewImage.src = imageObjectURL;
+        })
+        .catch(error => {
+          console.error('Error memuat gambar:', error);
+          alert('❌ Gambar gagal dimuat. Coba refresh');
+          modal.hide();
+        });
+    } else {
+      alert('Format URL tidak dikenali.');
+      modal.hide();
+    }
   }
+
+
 
 </script>

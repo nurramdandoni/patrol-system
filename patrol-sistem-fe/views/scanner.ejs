@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,7 +30,10 @@
       text-align: center;
     }
 
-    #reader, video, canvas, #preview {
+    #reader,
+    video,
+    canvas,
+    #preview {
       width: 320px;
       height: 240px;
       border-radius: 10px;
@@ -62,10 +66,22 @@
       font-weight: bold;
     }
 
-    .btn-primary { background: #007bff; }
-    .btn-secondary { background: #6c757d; }
-    .btn-success { background: #28a745; }
-    button:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-primary {
+      background: #007bff;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+    }
+
+    .btn-success {
+      background: #28a745;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
 
     #notes {
       width: 95%;
@@ -76,6 +92,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <h2>Kinenta Patrol</h2>
@@ -142,7 +159,7 @@
           html5QrCode.stop();
           switchToCameraMode();
         },
-        () => {}
+        () => { }
       );
     }
 
@@ -187,7 +204,7 @@
     };
 
     // === STEP 3: AMBIL FOTO ===
-    takeBtn.onclick = () => {
+    takeBtn.onclick = async () => {
       const ctx = canvas.getContext("2d");
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
@@ -201,6 +218,33 @@
       video.srcObject = null;
       takeBtn.disabled = true;
       submitBtn.disabled = false;
+
+      try {
+        // 🔥 Kirim base64 ke server
+        const response = await fetch("https://api.security-kinenta.paylite.co.id/upload-base64", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}` // opsional kalau pakai guard.verifyAuth
+          },
+          body: JSON.stringify({ base64Data })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload gagal (${response.status})`);
+        }
+
+        const result = await response.json();
+
+        // ✅ Simpan pathLocation dari server ke variabel photoBase64
+        photoBase64 = result.pathLocation;
+        submitBtn.disabled = false; // aktifkan tombol submit lagi
+
+      } catch (error) {
+        console.error("❌ Gagal upload gambar, lakukan foto kembali:", error);
+        alert("Upload Foto gagal, periksa koneksi atau token Anda!");
+        takeBtn.disabled = false; // aktifkan lagi kalau gagal
+      }
     };
 
     // === STEP 4: SUBMIT DATA ===
@@ -233,4 +277,5 @@
     });
   </script>
 </body>
+
 </html>
