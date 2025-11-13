@@ -9,6 +9,8 @@ services:
     volumes:
       - ./patrol-sistem-api/uploads:/app/uploads
       - ./patrol-sistem-api/.env:/app/.env
+      - ./patrol-sistem-api:/app
+      - /app/node_modules
     environment:
       NODE_ENV: production
     restart: always
@@ -18,6 +20,9 @@ services:
     container_name: patrol-frontend
     ports:
       - "4000:4000"
+    volumes:
+      - ./patrol-sistem-fe:/app
+      - /app/node_modules
     environment:
       NODE_ENV: production
       API_URL: "http://210.79.191.133:5050"
