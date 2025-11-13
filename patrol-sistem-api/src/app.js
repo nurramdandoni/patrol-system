@@ -17,9 +17,6 @@ app.use(cors({
   credentials: true
 }));
 
-// Handle preflight
-app.options('*', cors());
-
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 const guard = require('../src/middleware/auth.middleware');
