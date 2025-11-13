@@ -7,7 +7,7 @@ const path = require("path");
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:4000','http://210.79.191.133:4000/','https://kinenta-security.paylite.co.id'],
+  origin: ['http://localhost:4000','http://210.79.191.133:4000','https://kinenta-security.paylite.co.id'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
 }));
