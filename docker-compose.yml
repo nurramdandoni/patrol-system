@@ -17,7 +17,7 @@ services:
     build: ./patrol-sistem-fe
     container_name: patrol-frontend
     ports:
-      - "8080:3000"
+      - "4000:4000"
     environment:
       NODE_ENV: production
       API_URL: "http://patrol-backend:5050"
