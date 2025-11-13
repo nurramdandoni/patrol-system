@@ -6,19 +6,39 @@ const fs = require("fs");
 const path = require("path");
 const app = express();
 
-app.use(cors({
-  origin: [
-    'http://localhost:4000',
-    'http://210.79.191.133:4000',
-    'https://kinenta-security.paylite.co.id'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
-  credentials: true
-}));
+// CORS Configuration - FIXED
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:4000',
+      'http://localhost:3000',
+      'http://210.79.191.133:4000',
+      'http://210.79.191.133',
+      'https://security-kinenta.paylite.co.id',  // ← Cek domain Anda yang benar
+      'http://security-kinenta.paylite.co.id'
+    ];
+    
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Blocked origin:', origin);  // Debug
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  credentials: true,
+  maxAge: 86400  // Cache preflight for 24 hours
+};
 
-// Handle preflight
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+// app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
