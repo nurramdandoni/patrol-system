@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,12 +15,15 @@
       margin-top: 40px;
       background: #f7f7f7;
     }
-    #reader, #camera-container {
+
+    #reader,
+    #camera-container {
       width: 320px;
       border: 2px solid #333;
       border-radius: 10px;
       background: #fff;
     }
+
     #result {
       margin-top: 20px;
       font-size: 18px;
@@ -28,11 +32,14 @@
       padding: 10px 15px;
       border-radius: 5px;
     }
-    video, canvas {
+
+    video,
+    canvas {
       width: 320px;
       height: 240px;
       border-radius: 10px;
     }
+
     #preview {
       margin-top: 10px;
       border: 1px solid #999;
@@ -40,6 +47,7 @@
       width: 320px;
       display: none;
     }
+
     button {
       margin: 10px;
       padding: 8px 15px;
@@ -49,31 +57,41 @@
       border-radius: 6px;
       cursor: pointer;
     }
+
     button:disabled {
       background: #ccc;
     }
+
+    .btn-secondary {
+      background: #6c757d;
+    }
+
+    .btn-success {
+      background: #28a745;
+    }
   </style>
 </head>
+
 <body>
   <h2>Kinenta Patrol</h2>
   <div id="reader"></div>
-  <div id="result">Hasil scan akan muncul di sini...</div>
+  <div id="result">-</div>
 
-  <div>
+  <div style="width: 100%;margin-left: 15px;">
     <input type="hidden" id="token_location">
-    <input type="text" id="notes" placeholder="Catatan ....">
+    <input style="width: 95%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" type="text" id="notes" placeholder="Catatan ....">
   </div>
-
-  <div id="camera-container">
-    <video id="camera" autoplay></video>
+  <div style="margin-top: 10px;" id="camera-container">
+    <video id="camera" autoplay playsinline></video>
     <canvas id="snapshot" style="display:none;"></canvas>
     <img id="preview" />
   </div>
 
   <div>
-    <button id="start-camera">🎥 Nyalakan Kamera</button>
-    <button id="take-photo" disabled>📸 Ambil Foto</button>
-    <button id="submit-data">✅ Submit</button>
+    <button class="btn-secondary" id="flip" style="width: 100%; display: none;">🔄 Ubah Kamera</button>
+    <button class="btn-primary" id="start-camera" style="width: 100%;">🎥 Nyalakan Kamera</button>
+    <button class="btn-primary" id="take-photo" disabled style="width: 100%;">📸 Ambil Foto</button>
+    <button class="btn-success" id="submit-data" style="width: 100%;">✅ Submit</button>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -83,6 +101,9 @@
     const resultElement = document.getElementById("result");
     let photoBase64 = "";
     let stream = null;
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+    let facingMode = 'environment'; // Default belakang (untuk scan QR)
 
     // === SCANNER ===
     Html5Qrcode.getCameras().then(devices => {
@@ -92,7 +113,7 @@
           cameraId,
           { fps: 10, qrbox: 250 },
           qrMessage => {
-            resultElement.innerText = "✅ QR Terdeteksi: " + qrMessage;
+            resultElement.innerText = "✅ QR Terdeteksi";
             $('#token_location').val(qrMessage);
             html5QrCode.stop();
           },
@@ -105,47 +126,132 @@
       resultElement.innerText = "Tidak bisa mengakses kamera: " + err;
     });
 
-    // === FOTO CAPTURE ===
+    // === GET AVAILABLE CAMERAS ===
+    async function getAvailableCameras() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        availableCameras = devices.filter(device => device.kind === 'videoinput');
+        
+        // Show flip button only if multiple cameras
+        if (availableCameras.length > 1) {
+          document.getElementById('flip').style.display = 'block';
+        }
+        
+        return availableCameras;
+      } catch (err) {
+        console.error('Error getting cameras:', err);
+        return [];
+      }
+    }
+
+    // === START CAMERA ===
     const startBtn = document.getElementById('start-camera');
     const takeBtn = document.getElementById('take-photo');
+    const flipBtn = document.getElementById('flip');
     const video = document.getElementById('camera');
     const canvas = document.getElementById('snapshot');
     const preview = document.getElementById('preview');
 
-    startBtn.onclick = async () => {
+    async function startCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Stop existing stream
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+
+        // Get cameras if not already loaded
+        if (availableCameras.length === 0) {
+          await getAvailableCameras();
+        }
+
+        let constraints;
+        
+        if (availableCameras.length > 1) {
+          // Multiple cameras - use deviceId
+          const selectedCamera = availableCameras[currentCameraIndex];
+          constraints = {
+            video: {
+              deviceId: { exact: selectedCamera.deviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          };
+        } else {
+          // Single camera or fallback - use facingMode
+          constraints = {
+            video: {
+              facingMode: facingMode,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          };
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
         takeBtn.disabled = false;
+        startBtn.textContent = '🔄 Restart Kamera';
+        
       } catch (err) {
-        alert('Tidak bisa mengakses kamera: ' + err);
+        console.error('Camera error:', err);
+        alert('Tidak bisa mengakses kamera: ' + err.message);
+      }
+    }
+
+    startBtn.onclick = startCamera;
+
+    // === FLIP CAMERA ===
+    flipBtn.onclick = async () => {
+      if (availableCameras.length > 1) {
+        // Cycle through available cameras
+        currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+        await startCamera();
+      } else {
+        // Fallback: toggle facingMode
+        facingMode = facingMode === 'environment' ? 'user' : 'environment';
+        await startCamera();
       }
     };
 
+    // === TAKE PHOTO ===
     takeBtn.onclick = () => {
       const context = canvas.getContext('2d');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Konversi ke base64 JPG
+      // Convert to base64 JPG
       photoBase64 = canvas.toDataURL('image/jpeg', 0.9);
       preview.src = photoBase64;
       preview.style.display = 'block';
 
-      // Matikan kamera setelah ambil foto
+      // Stop camera after taking photo
       stream.getTracks().forEach(track => track.stop());
       video.srcObject = null;
       takeBtn.disabled = true;
+      startBtn.textContent = '🎥 Nyalakan Kamera';
     };
 
-    // === SUBMIT KE SERVER ===
+    // === SUBMIT TO SERVER ===
     $('#submit-data').click(async function () {
       const token_location = $('#token_location').val();
       const notes = $('#notes').val();
 
+      if (!token_location) {
+        alert('❌ Silakan scan QR Code terlebih dahulu!');
+        return;
+      }
+
+      if (!photoBase64) {
+        alert('❌ Silakan ambil foto terlebih dahulu!');
+        return;
+      }
+
       try {
-        const response = await fetch("<%= API_URL %>/patrol/check", {
+        // Replace with your actual API URL
+        const API_URL = 'https://api.security-kinenta.paylite.co.id';
+        
+        const response = await fetch(`${API_URL}/patrol/check`, {
           method: "POST",
           headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -162,9 +268,10 @@
         window.location.href = "/patrol-list";
       } catch (err) {
         alert("❌ " + err.message);
-        window.location.href = "/patrol-list";
+        console.error(err);
       }
     });
   </script>
 </body>
+
 </html>
