@@ -7,10 +7,18 @@ const path = require("path");
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:4000','http://210.79.191.133:4000','https://kinenta-security.paylite.co.id'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: [
+    'http://localhost:4000',
+    'http://210.79.191.133:4000',
+    'https://kinenta-security.paylite.co.id'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'ngrok-skip-browser-warning'],
+  credentials: true
 }));
+
+// Handle preflight
+app.options('*', cors());
 
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
