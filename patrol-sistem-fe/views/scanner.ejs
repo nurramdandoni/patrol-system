@@ -145,7 +145,7 @@
       const notes = $('#notes').val();
 
       try {
-        const response = await fetch("http://localhost:5050/patrol/check", {
+        const response = await fetch("<%= API_URL %>/patrol/check", {
           method: "POST",
           headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('token'),

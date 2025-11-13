@@ -96,7 +96,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $('#login').click(function(){
-    fetch('http://localhost:5050/auth/login', {
+    fetch('<%= API_URL %>/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

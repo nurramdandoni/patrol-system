@@ -1,3 +1,5 @@
+const dotenv = require('dotenv');
+dotenv.config();
 const express = require('express');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
@@ -13,6 +15,11 @@ app.set('layout', 'layouts/main'); // default layout
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // penting buat form POST
 app.use(express.static(path.join(__dirname, 'public'))); // folder public untuk CSS/JS/img
+
+app.use((req, res, next) => {
+  res.locals.API_URL = process.env.API_URL; // variabel global EJS
+  next();
+});
 
 // ====== Routing ======
 app.get('/', (req, res) => {

@@ -181,7 +181,7 @@
         const fromDate = document.getElementById('from').value;
         const toDate = document.getElementById('to').value;
 
-        fetch(`http://localhost:5050/admin/patrol-activity?date_from=${fromDate}&date_to=${toDate}`, {
+        fetch(`<%= API_URL %>/admin/patrol-activity?date_from=${fromDate}&date_to=${toDate}`, {
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -219,7 +219,7 @@
               <td>
                 ${item.check_image != null
                             ? item.check_image && item.check_image.trim() !== ''
-                                ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.check_image}')">
+                                ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('<%= API_URL %>/${item.check_image}')">
                           <i class="bi bi-eye-fill"></i> onCapture
                         </span>`
                                 : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'

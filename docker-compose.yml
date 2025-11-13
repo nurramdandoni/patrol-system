@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  patrol-backend:
+    build: ./patrol-sistem-api
+    container_name: patrol-backend
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./patrol-sistem-api/uploads:/app/uploads
+      - ./patrol-sistem-api/.env:/app/.env
+    environment:
+      NODE_ENV: production
+    restart: always
+
+  patrol-frontend:
+    build: ./patrol-sistem-fe
+    container_name: patrol-frontend
+    ports:
+      - "8080:3000"
+    environment:
+      NODE_ENV: production
+      API_URL: "http://patrol-backend:5050"
+    depends_on:
+      - patrol-backend
+    restart: always

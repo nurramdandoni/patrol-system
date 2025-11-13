@@ -162,7 +162,7 @@
   });
   $('#menus-data').html(menusHtml);
 
-  fetch('http://localhost:5050/admin/location', {
+  fetch('<%= API_URL %>/admin/location', {
     method: 'GET',
     headers: {
       'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -192,7 +192,7 @@
             <td>
               ${item.images != null
             ? item.images && item.images.trim() !== ''
-              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.images}')">
+              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('<%= API_URL %>/${item.images}')">
                         <i class="bi bi-eye-fill"></i> onCapture
                       </span>`
               : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
@@ -263,51 +263,59 @@
   }
 </script>
 <script>
-document.getElementById('btnPrintPDF').addEventListener('click', async () => {
-  // Ambil semua checkbox yang dicentang
-  const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+  document.getElementById('btnPrintPDF').addEventListener('click', async () => {
+    // Ambil semua checkbox yang dicentang
+    const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
 
-  if (checked.length === 0) {
-    alert('⚠️ Pilih minimal satu lokasi dulu!');
-    return;
-  }
+    if (checked.length === 0) {
+      alert('⚠️ Pilih minimal satu lokasi dulu!');
+      return;
+    }
 
-  // Buat array objek sesuai format { name, qr_value }
-  const selectedData = checked.map(cb => {
-    const row = cb.closest('tr');
-    const name = row.children[1].textContent.trim(); // kolom nama lokasi
-    const qrImg = row.querySelector('img'); // ambil tag <img> di kolom QR
-    // token ada di URL src
-    const qrSrc = qrImg.getAttribute('src');
-    const qrParam = new URL(qrSrc).searchParams.get('data'); // ambil nilai data= di URL QR
-    return { name, qr_value: qrParam };
-  });
+    // Buat array objek sesuai format { name, qr_value }
+    const selectedData = checked.map(cb => {
+      const row = cb.closest('tr');
+      const name = row.children[1].textContent.trim(); // kolom nama lokasi
+      const qrImg = row.querySelector('img'); // ambil tag <img> di kolom QR
+      // token ada di URL src
+      const qrSrc = qrImg.getAttribute('src');
+      const qrParam = new URL(qrSrc).searchParams.get('data'); // ambil nilai data= di URL QR
+      return { name, qr_value: qrParam };
+    });
 
-  console.log('Data dikirim ke backend:', selectedData);
+    console.log('Data dikirim ke backend:', selectedData);
 
-  // Kirim ke backend
-  const response = await fetch('http://localhost:5050/admin/pdf/location', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + localStorage.getItem('token'),
-      'Content-Type': 'application/json',
-      'ngrok-skip-browser-warning': 'true'
-    },
-    body: JSON.stringify({ data: selectedData })
-  });
+    // Kirim ke backend
+    const response = await fetch('<%= API_URL %>/admin/pdf/location', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      body: JSON.stringify({ data: selectedData })
+    });
 
-  if (!response.ok) {
-    alert('❌ Gagal generate PDF');
-    return;
-  }
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server response:', errorText);
+      if (response.status === 401) {
+        alert('❌ ' + errorText + ' On Print Menu Location');
+        // Redirect ke halaman login
+        window.location.href = '/';
+      } else {
+        alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+      }
+      return;
+    }
 
-  // Terima PDF sebagai blob
-  const blob = await response.blob();
-  const pdfUrl = URL.createObjectURL(blob);
+    // Terima PDF sebagai blob
+    const blob = await response.blob();
+    const pdfUrl = URL.createObjectURL(blob);
 
-  // Tampilkan PDF di bawah tabel
-  document.getElementById('pdfContainer').innerHTML = `
+    // Tampilkan PDF di bawah tabel
+    document.getElementById('pdfContainer').innerHTML = `
     <embed src="${pdfUrl}" type="application/pdf" width="100%" height="600px" />
   `;
-});
+  });
 </script>

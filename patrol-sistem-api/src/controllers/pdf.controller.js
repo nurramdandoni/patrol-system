@@ -1,8 +1,20 @@
 const PDFDocument = require("pdfkit");
 const QRCode = require("qrcode");
+const checkPermission = require("../utils/checkPermission");
 
 exports.generateLocationPDF = async (req, res) => {
   try {
+    const menuId = 3;                       // /admin/location
+    const permissionId = [5];               // 1 view 2 create, 3 edit, 4 delete, 5 print
+    // validasi akses
+    const allowed = await checkPermission(menuId, permissionId, req.user);
+    if (!allowed) {
+      return res.status(401).json({
+        status: 'Access',
+        message: 'Access Not Allowed',
+      });
+    }
+
     const { data } = req.body;
     const doc = new PDFDocument({ margin: 10 });
 

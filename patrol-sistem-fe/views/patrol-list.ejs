@@ -153,7 +153,7 @@
   });
   $('#menus-data').html(menusHtml);
 
-  fetch('http://localhost:5050/patrol/list', {
+  fetch('<%= API_URL %>/patrol/list', {
     method: 'GET',
     headers: {
       'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -184,7 +184,7 @@
             <td>
               ${item.patrol_activity.length > 0
             ? item.patrol_activity[0].check_image && item.patrol_activity[0].check_image.trim() !== ''
-              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('http://localhost:5050/${item.patrol_activity[0].check_image}')">
+              ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('<%= API_URL %>/${item.patrol_activity[0].check_image}')">
                         <i class="bi bi-eye-fill"></i> onCapture
                       </span>`
               : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
