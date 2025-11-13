@@ -227,7 +227,7 @@
             "Content-Type": "application/json",
             "Authorization": `Bearer ${localStorage.getItem("token")}` // opsional kalau pakai guard.verifyAuth
           },
-          body: JSON.stringify({ base64Data })
+          body: JSON.stringify({ base64Data:photoBase64 })
         });
 
         if (!response.ok) {
