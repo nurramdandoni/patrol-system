@@ -20,7 +20,7 @@ services:
       - "4000:4000"
     environment:
       NODE_ENV: production
-      API_URL: "http://patrol-backend:5050"
+      API_URL: "http://210.79.191.133:5050"
     depends_on:
       - patrol-backend
     restart: always
