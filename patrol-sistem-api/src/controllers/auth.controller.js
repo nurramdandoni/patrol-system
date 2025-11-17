@@ -64,6 +64,7 @@ exports.login = async (req, res) => {
           menu_id: menu[i].id,
           menu_name: menu[i].name,
           menu_path: menu[i].path,
+          icon: menu[i].icon,
           menu_permission: permisionData,
         });
       }

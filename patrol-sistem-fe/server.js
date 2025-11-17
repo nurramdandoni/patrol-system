@@ -9,7 +9,7 @@ const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(expressLayouts);
-app.set('layout', 'layouts/main'); // default layout
+app.set('layout', 'layouts/main2'); // default layout
 
 // ====== Middleware ======
 app.use(express.json());
@@ -23,7 +23,10 @@ app.use((req, res, next) => {
 
 // ====== Routing ======
 app.get('/', (req, res) => {
-  res.render('signin/index', { title: 'Sign In Page' });
+  res.render('signin/index', { layout: 'layouts/blanks', title: 'Sign In Page' });
+});
+app.get('/layout', (req, res) => {
+  res.render('dashboard/index', { title: 'Dashboard Page' });
 });
 
 app.get('/location', (req, res) => {
