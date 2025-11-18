@@ -1,0 +1,202 @@
+<span style="font-size:20px;font-weight:600;">
+    <%= title %>
+</span>
+<div style="margin-top: 19px;">
+    <div class="table-container" style="overflow: auto; max-height: 500px; padding: 5px;">
+        <table style="
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;">
+            <thead>
+                <tr style="background: #f0f7ff; border-bottom: 2px solid #c5d9f5;">
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">#
+                    </th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">Nama
+                        Lokasi</th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">Foto
+                    </th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Status</th>
+                </tr>
+            </thead>
+
+            <tbody id="patrol-data">
+                <tr style="border-bottom: 1px solid #e1e4e8; transition: 0.2s;"
+                    onmouseover="this.style.background='#f9fbff'" onmouseout="this.style.background='white'">
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 5px;">
+        <button id="btnPrintPDF" class="btn btn-primary btn-sm">🖨️ Cetak Barcode</button>
+    </div>
+    <div id="pdfContainer" class="mt-4 text-center">
+        <!-- PDF akan ditampilkan di sini -->
+    </div>
+</div>
+
+<script>
+    fetch('<%= API_URL %>/admin/location', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'ngrok-skip-browser-warning': 'true'
+        }
+    })
+        .then(async (response) => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server response:', errorText);
+                if (response.status === 401) {
+                    alert('❌ ' + errorText + ' On Menu Location');
+                    // Redirect ke halaman login
+                    window.location.href = '/';
+                } else {
+                    alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+                }
+                throw new Error('HTTP error ' + response.status);
+            }
+            let tableBody = '';
+            const data = await response.json();
+            data.data.forEach((item, index) => {
+                tableBody += `
+          <tr style="border-bottom: 1px solid #e1e4e8; transition: 0.2s;">
+            <td><input type="checkbox" ${item.status != 1 ? 'disabled' : ''}/> &nbsp;${index + 1}</td>
+            <td>${item.name}</td>
+            <td>
+              ${item.images != null
+                        ? item.images && item.images.trim() !== ''
+                            ? `<button style="cursor:pointer;color: white;background-color: green;border-radius: 5px; border: none;" onclick="showImage('<%= API_URL %>/${item.images}')">
+                        <i class="fa fa-camera"></i> onCapture
+                      </button>`
+                            : '<button style="color: white; background-color: red;border-radius: 5px; border: none;">notCapture</button>'
+                        : '<span>-</button>'
+                    }
+            </td>
+            <td>
+              ${item.status != null
+                        ? item.status == 1
+                            ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Active</span>'
+                            : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Non Active</span>'
+                        : '<span class="badge bg-secondary">-</span>'
+                    }
+                <input type="hidden" class="qr-value" value="${item.token_location}" />
+            </td>
+          </tr>
+        `;
+            });
+            console.log(tableBody);
+            document.getElementById('patrol-data').innerHTML = tableBody;
+        })
+
+    function showImage(url) {
+        if (url == "") {
+            alert('Tidak ada gambar untuk dilihat.');
+            return;
+        }
+
+        // Tampilkan modal terlebih dahulu
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+
+        const previewImage = document.getElementById('previewImage');
+        // Atur gambar sebagai loading sementara
+        previewImage.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=...'; // URL loading SVG, atau biarkan kosong
+
+        // Lakukan FETCH untuk mendapatkan gambar sebagai BLOB
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                // Masukkan header di sini!
+                'ngrok-skip-browser-warning': 'true'
+            }
+        })
+            .then(response => {
+                // Jika respons bukan gambar, atau ada masalah (misalnya ngrok tetap memblokir)
+                if (!response.ok) {
+                    throw new Error('Gagal memuat gambar dari server: ' + response.status);
+                }
+                // Dapatkan data gambar sebagai Blob
+                return response.blob();
+            })
+            .then(imageBlob => {
+                // Buat URL Objek yang bisa digunakan oleh tag <img>
+                const imageObjectURL = URL.createObjectURL(imageBlob);
+
+                // Ganti src gambar dengan URL Objek Blob
+                previewImage.src = imageObjectURL;
+            })
+            .catch(error => {
+                console.error('Error memuat gambar:', error);
+                alert('❌ Gambar gagal dimuat. Coba refresh atau klik "Visit Site" di halaman ngrok.');
+                // Sembunyikan modal jika gagal
+                modal.hide();
+            });
+    }
+
+    document.getElementById('btnPrintPDF').addEventListener('click', async () => {
+        // Ambil semua checkbox yang dicentang
+        const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+
+        if (checked.length === 0) {
+            alert('⚠️ Pilih minimal satu lokasi dulu!');
+            return;
+        }
+
+        // Buat array objek sesuai format { name, qr_value }
+        const selectedData = checked.map(cb => {
+            const row = cb.closest('tr');
+            const name = row.children[1].textContent.trim(); // kolom nama lokasi
+            // const qrImg = row.querySelector('img'); // ambil tag <img> di kolom QR
+            // // token ada di URL src
+            // const qrSrc = qrImg.getAttribute('src');
+            // const qrParam = new URL(qrSrc).searchParams.get('data'); // ambil nilai data= di URL QR
+            const qrParam = row.querySelector('.qr-value').value;
+            return { name, qr_value: qrParam };
+        });
+
+        console.log('Data dikirim ke backend:', selectedData);
+
+        // Kirim ke backend
+        const response = await fetch('<%= API_URL %>/admin/pdf/location', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
+            },
+            body: JSON.stringify({ data: selectedData })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server response:', errorText);
+            if (response.status === 401) {
+                alert('❌ ' + errorText + ' On Print Menu Location');
+                // Redirect ke halaman login
+                window.location.href = '/';
+            } else {
+                alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+            }
+            return;
+        }
+
+        // Terima PDF sebagai blob
+        const blob = await response.blob();
+        const pdfUrl = URL.createObjectURL(blob);
+
+        // Tampilkan PDF di bawah tabel
+        document.getElementById('pdfContainer').innerHTML = `
+    <embed src="${pdfUrl}" type="application/pdf" width="100%" height="600px" />
+  `;
+    });
+</script>

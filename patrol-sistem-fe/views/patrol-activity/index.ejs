@@ -1,0 +1,235 @@
+<div style="display: flex;">
+    <span style="font-size:20px;font-weight:600;">
+        <%= title %>
+    </span>
+    <div style="display:flex;margin-left: auto; margin-right: 8px;">
+        <div style="margin-right: 10px;">
+            <%- include('card-date', { cardTitle: 'Dari', propId:'from' }) %>
+        </div>
+        <div>
+            <%- include('card-date', { cardTitle: 'Ke', propId:'to' }) %>
+        </div>
+    </div>
+</div>
+<div style="margin-top: 19px;">
+    <div class="table-container" style="overflow: auto; max-height: 500px; padding: 5px;">
+        <table style="
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;">
+            <thead>
+                <tr style="background: #f0f7ff; border-bottom: 2px solid #c5d9f5;">
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        #
+                    </th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Tanggal
+                    </th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Lokasi</th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">Foto
+                    </th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Catatan</th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Status</th>
+                </tr>
+            </thead>
+
+            <tbody id="patrol-data">
+                <tr style="border-bottom: 1px solid #e1e4e8; transition: 0.2s;"
+                    onmouseover="this.style.background='#f9fbff'" onmouseout="this.style.background='white'">
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Preview Gambar -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-center">
+      <div class="modal-body">
+        <img id="previewImage" src="" alt="Foto Patrol" class="img-fluid rounded">
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    $('.tanggal').change(function () {
+        const fromDate = document.getElementById('from').value;
+        const toDate = document.getElementById('to').value;
+        console.log('From:', fromDate, 'To:', toDate);
+        loadPatrolData();
+    });
+
+    function loadPatrolData() {
+        const fromDate = document.getElementById('from').value;
+        const toDate = document.getElementById('to').value;
+
+        fetch(`<%= API_URL %>/admin/patrol-activity?date_from=${fromDate}&date_to=${toDate}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            }
+        })
+            .then(async (response) => {
+                console.log(response);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server response:', errorText);
+                    if (response.status === 401) {
+                        alert('❌ ' + errorText + ' On Menu Patrol Activity');
+                        // Redirect ke halaman login
+                        window.location.href = '/';
+                    } else {
+                        alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+                    }
+                    throw new Error('HTTP error ' + response.status);
+                }
+                let tableBody = '';
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.data) || data.data.length === 0) {
+                    document.getElementById('patrol-data').innerHTML = `
+                                    <tr><td colspan="6" class="text-center text-muted">Tidak ada data untuk rentang tanggal ini.</td></tr>`;
+                    return;
+                }
+
+                data.data.forEach((item, index) => {
+                    tableBody += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${item.check_date != null ? item.check_date : '-'}</td>
+              <td>${item.location.name}</td>
+              <td>
+                ${item.check_image != null
+                            ? item.check_image && item.check_image.trim() !== ''
+                                ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('<%= API_URL %>/${item.check_image}')">
+                          <i class="bi bi-eye-fill"></i> onCapture
+                        </span>`
+                                : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
+                            : '<span class="badge bg-secondary">-</span>'
+                        }
+              </td>
+              <td>${item.check_notes != null ? item.check_notes : '-'}</td>
+              <td>
+                ${item.check_image != null
+                            ? item.check_status == 1
+                                ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Checked</span>'
+                                : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
+                            : '<span class="badge bg-secondary">-</span>'
+                        }
+              </td>
+            </tr>
+          `;
+                });
+                console.log(tableBody);
+                document.getElementById('patrol-data').innerHTML = tableBody;
+            })
+    }
+
+    function showImage(url) {
+        if (!url) {
+            alert('Tidak ada gambar untuk dilihat.');
+            return;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+
+        const previewImage = document.getElementById('previewImage');
+        previewImage.src = ''; // reset gambar lama
+
+        // 🧠 Deteksi tipe URL
+        let type = 'unknown';
+        try {
+            const parsed = new URL(url);
+            const path = parsed.pathname.startsWith('/')
+                ? parsed.pathname.slice(1)
+                : parsed.pathname;
+
+            if (path.startsWith('upload')) type = 'path';
+            else if (path.startsWith('data:image')) type = 'base64';
+        } catch (err) {
+            // Jika bukan URL valid, mungkin base64 langsung
+            if (url.startsWith('data:image')) type = 'base64';
+        }
+
+        // 🔥 Aksi berdasarkan tipe
+        if (type === 'base64') {
+            previewImage.src = url; // langsung tampilkan
+        } else if (type === 'path') {
+            // fetch dari server
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'ngrok-skip-browser-warning': 'true',
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Gagal memuat gambar dari server: ' + response.status);
+                    }
+                    return response.blob();
+                })
+                .then(imageBlob => {
+                    const imageObjectURL = URL.createObjectURL(imageBlob);
+                    previewImage.src = imageObjectURL;
+                })
+                .catch(error => {
+                    console.error('Error memuat gambar:', error);
+                    alert('❌ Gambar gagal dimuat. Coba refresh');
+                    modal.hide();
+                });
+        } else {
+            alert('Format URL tidak dikenali.');
+            modal.hide();
+        }
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // === 1️⃣ Set default tanggal hari ini ===
+        const today = new Date();
+        const formatDate = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        const todayStr = formatDate(today);
+
+        // Ambil input date dan isi nilainya
+        const startInput = document.getElementById('from');
+        const endInput = document.getElementById('to');
+
+        if (startInput && endInput) {
+            startInput.value = todayStr;
+            endInput.value = todayStr;
+        }
+
+        // === 2️⃣ Setelah tanggal terisi, baru load data ===
+        loadPatrolData();
+
+        // === 3️⃣ Pas user ubah tanggal, reload data ===
+        $('.tanggal').change(function () {
+            loadPatrolData();
+        });
+    });
+</script>
