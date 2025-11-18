@@ -37,7 +37,8 @@
     </div>
 
     <div style="margin-top: 5px;">
-        <button id="btnPrintPDF" class="btn btn-primary btn-sm">🖨️ Cetak Barcode</button>
+        <%- include('../component/print-button', {name:'Cetak Barcode', linkUrl:'',linkId:'btnPrintPDF',linkClass:''}) %>
+        <!-- <button id="btnPrintPDF" class="btn btn-primary btn-sm">🖨️ Cetak Barcode</button> -->
     </div>
     <div id="pdfContainer" class="mt-4 text-center">
         <!-- PDF akan ditampilkan di sini -->

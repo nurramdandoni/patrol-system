@@ -1,0 +1,42 @@
+<% if (linkUrl && linkUrl !=="" ) { %>
+
+    <!-- JIKA ADA URL → pake A tag -->
+    <a href="<%= linkUrl %>" id="<%= linkId %>" class="<%= linkClass %>" style="display:none;">
+        <button
+            style="width:164px;background-color: green;color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;padding: 5px;">
+            <i class="fa fa-plus"></i>&nbsp;
+            <%= name %>
+        </button>
+    </a>
+
+    <% } else { %>
+
+        <!-- JIKA TIDAK ADA URL → tombol biasa -->
+        <button id="<%= linkId %>" class="<%= linkClass %>"
+            style="display:none;width:164px;background-color: green;color:#FFFFFF;border-radius:5px;border:1px solid #FFFFFF;padding:5px;">
+            <i class="fa fa-plus"></i>&nbsp;<%= name %>
+        </button>
+
+        <% } %>
+
+            <script>
+                const pathNow = window.location.pathname;
+                const insertCheck = JSON.parse(localStorage.getItem('menus'));
+
+                insertCheck.forEach(menu => {
+                    if (pathNow === menu.menu_path) {
+
+                        // menu_permission harus array!
+                        if (menu.menu_permission.includes("create")) {
+
+                            console.log("Access Created Granted");
+
+                            // tampilkan tombol
+                            document.getElementById("<%= linkId %>").style.display = "inline-block";
+
+                        } else {
+                            console.log("Not Access");
+                        }
+                    }
+                });
+            </script>
