@@ -46,13 +46,13 @@ app.get("/patrol-activity", (req, res) => {
   });
 });
 
-const tanggalSekarang = new Date().toLocaleDateString("id-ID", {
-  weekday: "long",
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
 app.get("/patrol-list", (req, res) => {
+  const tanggalSekarang = new Date().toLocaleDateString("id-ID", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
   res.render("patrol-list/index", {
     title: "Daftar Patroli",
     titlePage: "Patrol List",
