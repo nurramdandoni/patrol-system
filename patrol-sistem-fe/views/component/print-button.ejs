@@ -15,26 +15,3 @@
     </button>
 
 <% } %>
-
-
-<script>
-    const pathNow = window.location.pathname;
-    const insertCheck = JSON.parse(localStorage.getItem('menus'));
-
-    insertCheck.forEach(menu => {
-        if (pathNow === menu.menu_path) {
-
-            // menu_permission harus array!
-            if (menu.menu_permission.includes("print")) {
-
-                console.log("Access Created Granted");
-
-                // tampilkan tombol
-                document.getElementById("<%= linkId %>").style.display = "inline-block";
-
-            } else {
-                console.log("Not Access");
-            }
-        }
-    });
-</script>

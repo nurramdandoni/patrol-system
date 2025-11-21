@@ -3,8 +3,8 @@
     <!-- JIKA ADA URL → pake A tag -->
     <a href="<%= linkUrl %>" id="<%= linkId %>" class="<%= linkClass %>" style="display:none;">
         <button
-            style="width:164px;background-color: green;color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;padding: 5px;">
-            <i class="fa fa-plus"></i>&nbsp;
+            style="width:164px;background-color: #2cbae8;color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;padding: 5px;">
+            <i class="fa fa-pencil"></i>&nbsp;
             <%= name %>
         </button>
     </a>
@@ -13,8 +13,8 @@
 
         <!-- JIKA TIDAK ADA URL → tombol biasa -->
         <button id="<%= linkId %>" class="<%= linkClass %>"
-            style="display:none;width:164px;background-color: green;color:#FFFFFF;border-radius:5px;border:1px solid #FFFFFF;padding:5px;">
-            <i class="fa fa-plus"></i>&nbsp;<%= name %>
+            style="display:none;width:164px;background-color: #2cbae8;color:#FFFFFF;border-radius:5px;border:1px solid #FFFFFF;padding:5px;">
+            <i class="fa fa-pencil"></i>&nbsp;<%= name %>
         </button>
 
         <% } %>
