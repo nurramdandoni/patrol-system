@@ -12,7 +12,7 @@ async function checkPermission(menuId, permissionIds, user) {
     if (!user || !user.role_id) return false;
 
     const rolePermissions = await RoleMenuPermission.findAll({
-      where: { role_id: user.role_id, menu_id: menuId },
+      where: { role_id: user.role_id, menu_id: menuId, status:1 },
       include: [{ model: Permission }],
     });
 
