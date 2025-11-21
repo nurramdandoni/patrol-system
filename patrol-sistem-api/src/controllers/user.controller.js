@@ -1,4 +1,4 @@
-const { User } = require("../models");
+const { User, Role } = require("../models");
 const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const checkPermission = require("../utils/checkPermission");
@@ -22,6 +22,9 @@ exports.getAll = async (req, res) => {
     const offset = (page - 1) * rowCount;
 
     const { count, rows } = await User.findAndCountAll({
+      include:[
+        {model:Role}
+      ],
       limit: rowCount,
       offset,
     });
