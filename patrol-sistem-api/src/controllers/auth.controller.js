@@ -16,10 +16,7 @@ exports.login = async (req, res) => {
 
     const user = await User.findOne({
       where: { username },
-      include: [
-        { model: Employee }, 
-        { model: Role }
-      ],
+      include: [{ model: Employee }, { model: Role }],
     });
 
     if (!user) {
@@ -41,7 +38,9 @@ exports.login = async (req, res) => {
 
     // 🔥 Transformasi data ke bentuk yang lebih rapi
     let menus = [];
-    const menu = await Menu.findAll();
+    const menu = await Menu.findAll({
+      order: [["index", "ASC"]],
+    });
     const menupPermission = await RoleMenuPermission.findAll({
       where: { role_id: user.role.id },
       include: [
