@@ -201,3 +201,35 @@
   `;
     });
 </script>
+<!-- grant access button -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const pathNow = window.location.pathname;
+    const insertCheck = JSON.parse(localStorage.getItem('menus'));
+
+    insertCheck.forEach(menu => {
+        if (pathNow === menu.menu_path) {
+
+            // Show INSERT
+            if (menu.menu_permission.includes("create")) {
+                const btn = document.getElementById("btnPrintPDF");
+                if (btn) btn.style.display = "inline-block";
+            }
+
+            // Show EDIT
+            if (menu.menu_permission.includes("edit")) {
+                const btn = document.getElementById("btnPrintPDF");
+                if (btn) btn.style.display = "inline-block";
+            }
+
+            // Show PRINT
+            if (menu.menu_permission.includes("print")) {
+                const btn = document.getElementById("btnPrintPDF");
+                if (btn) btn.style.display = "inline-block";
+            }
+        }
+    });
+
+});
+</script>
