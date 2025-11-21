@@ -1,6 +1,181 @@
-<span style="font-size:20px;font-weight:600;">
-    <%= title %>
-</span>
-<div style="margin-top: 19px;">
-    ini Akses
+<div style="display: flex;">
+    <span style="font-size:20px;font-weight:600;">
+        <%= title %>
+    </span>
 </div>
+<div style="display: flex;">
+    <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
+        <%- include('../component/insert-button', {name:'Akses', linkUrl:'',linkId:'insertAkses',linkClass:''}) %>
+    </div>
+    <div style="margin-right: 8px; margin-top: 12px;">
+        <%- include('../component/edit-button', {name:'Akses', linkUrl:'',linkId:'editAkses',linkClass:''}) %>
+    </div>
+</div>
+<div style="margin-top: 19px;">
+    <div class="table-container" style="overflow: auto; max-height: 500px; padding: 5px;">
+        <table style="
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;">
+            <thead>
+                <tr style="background: #f0f7ff; border-bottom: 2px solid #c5d9f5;">
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        #
+                    </th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Role</th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Menu</th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Access</th>
+                </tr>
+            </thead>
+
+            <tbody id="patrol-data">
+                <tr style="border-bottom: 1px solid #e1e4e8; transition: 0.2s;"
+                    onmouseover="this.style.background='#f9fbff'" onmouseout="this.style.background='white'">
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Preview Gambar -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-center">
+            <div class="modal-body">
+                <img id="previewImage" src="" alt="Foto Patrol" class="img-fluid rounded">
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    fetch('<%= API_URL %>/admin/access', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'ngrok-skip-browser-warning': 'true'
+        }
+    })
+        .then(async (response) => {
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server response:', errorText);
+                if (response.status === 401) {
+                    alert('❌ ' + errorText + ' On Menu Employee');
+                    // Redirect ke halaman login
+                    window.location.href = '/';
+                } else {
+                    alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+                }
+                throw new Error('HTTP error ' + response.status);
+            }
+            let tableBody = '';
+            const data = await response.json();
+            console.log(data);
+            let lastRoleValue = '';
+            let lastRoleDisplayed = '';
+            data.data.forEach((item, index) => {
+                if (item.role !== lastRoleValue) {
+                    // Role beda → tampilkan
+                    lastRoleDisplayed = item.role;
+                    lastRoleValue = item.role;
+                } else {
+                    // Role sama → kosongkan display
+                    lastRoleDisplayed = '';
+                }
+                tableBody += `
+          <tr>
+            <td>
+                <input type="checkbox"/> &nbsp;${index + 1}
+                <input type="hidden" class="roleId" value="${item.role_id}" />
+                <input type="hidden" class="menuId" value="${item.menu_id}" />
+            </td>
+            <td>${lastRoleDisplayed}</td>
+            <td>${item.menu}</td>
+            <td>${item.action}</td>
+          </tr>
+        `;
+            });
+            // console.log(tableBody);
+            document.getElementById('patrol-data').innerHTML = tableBody;
+        })
+
+</script>
+<!-- grant access -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+        const pathNow = window.location.pathname;
+        const insertCheck = JSON.parse(localStorage.getItem('menus'));
+
+        insertCheck.forEach(menu => {
+            if (pathNow === menu.menu_path) {
+
+                // Show INSERT
+                if (menu.menu_permission.includes("create")) {
+                    const btn = document.getElementById("insertAkses");
+                    if (btn) btn.style.display = "inline-block";
+                }
+
+                // Show EDIT
+                if (menu.menu_permission.includes("edit")) {
+                    const btn = document.getElementById("editAkses");
+                    if (btn) btn.style.display = "inline-block";
+                }
+
+                // Show PRINT
+                if (menu.menu_permission.includes("print")) {
+                    const btn = document.getElementById("printAkses");
+                    if (btn) btn.style.display = "inline-block";
+                }
+            }
+        });
+
+    });
+
+    document.addEventListener("change", function (e) {
+        if (e.target.type === "checkbox") {
+
+            if (e.target.checked) {
+                // Jika user CHECK → uncheck semua lainnya
+                document.querySelectorAll('#patrol-data input[type=checkbox]').forEach(cb => {
+                    if (cb !== e.target) cb.checked = false;
+                });
+            }
+        }
+    });
+
+
+    $("#editAkses").click(function () {
+        const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+
+        if (checked.length === 0) {
+            alert('⚠️ Pilih minimal satu data dulu!');
+            return;
+        }
+        // Buat array objek sesuai format { id, dataId }
+        const selectedData = checked.map(cb => {
+            const row = cb.closest('tr');
+            const roleId = row.querySelector('.roleId').value;
+            const menuId = row.querySelector('.menuId').value;
+            return { role_id: roleId, menu_id:menuId };
+        });
+
+        console.log('Data dikirim ke backend:', selectedData);
+
+        console.log(checked);
+    });
+</script>
