@@ -4,6 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     role_id: { type: DataTypes.INTEGER, allowNull: false },
     menu_id: { type: DataTypes.INTEGER, allowNull: false },
     permission_id: { type: DataTypes.INTEGER, allowNull: false },
+    status: {type: DataTypes.TINYINT,allowNull: false,defaultValue: 0},
   });
 
   return RoleMenuPermission;
