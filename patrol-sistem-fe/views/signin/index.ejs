@@ -85,10 +85,15 @@
         .then(data => {
           localStorage.setItem('token', data.token);
           localStorage.setItem('role', data.user.role);
+          localStorage.setItem('role_id', data.user.role_id);
           localStorage.setItem('profile', JSON.stringify(data.user.employee));
           localStorage.setItem('menus', JSON.stringify(data.user.menus));
           alert('✅ Login berhasil');
-          window.location.href = '/patrol-list';
+          if(data.user.role_id != 6){
+            window.location.href = '/dashboard';
+          }else{
+            window.location.href = '/patrol-list';
+          }
         }).catch(error => {
           console.error('Error:', error);
         });

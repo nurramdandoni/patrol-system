@@ -76,6 +76,7 @@ exports.login = async (req, res) => {
         id: user.id,
         username: user.username,
         employee: user.employee,
+        role_id: user.role.id,
         role: user.role?.name,
         menus,
       },
