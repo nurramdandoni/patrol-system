@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { Location, PatrolActivity, User} = require('../models');
+const { Location, PatrolActivity, User, Schedule} = require('../models');
 const jwtUtils = require('../utils/jwt');
 const { json, Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
@@ -22,15 +22,47 @@ exports.list = async (req, res) => {
         message: 'Access Not Allowed',
       });
     }
+
+    const authHeader = req.headers.authorization;
+    const token = authHeader.split(' ')[1]; // Bearer xxx
+    const payload = jwtUtils.verifyToken(token);
+    const specialRoleIds = [6]; // role khusus list sesuai schedule
+    console.log('JWT payload:', payload);
     
     const page = parseInt(req.query.page) || 1;
-    const rowCount = parseInt(req.query.rowCount) || 10;
+    const rowCount = parseInt(req.query.rowCount) || 100;
     const offset = (page - 1) * rowCount;
 
-    const { count, rows } = await Location.findAndCountAll({
-      limit: rowCount,
-      offset,
-    });
+    let count;
+    let rows;
+    if(specialRoleIds.includes(payload.role_id)){
+      console.log("special role");
+      // cek jadwal untuk role ini
+      const { count: countSchedule, rows: rowsSchedule } = await Schedule.findAndCountAll({
+        where:{
+          schedule_date: new Date(),
+          checker_id: payload.user_id
+        }
+      });
+      let locationType = [];
+      rowsSchedule.forEach(schedule => {
+        locationType.push(schedule.location_type_id);
+      });
+      console.log(locationType);
+      ({ count, rows } = await Location.findAndCountAll({
+        limit: rowCount,
+        offset,
+        where:{
+          location_type_id: { [Op.in]: locationType }
+        }
+      }));
+    }else{
+      ({ count, rows } = await Location.findAndCountAll({
+        limit: rowCount,
+        offset,
+      }));
+    }
+    
     const where = {};
     const today = new Date();
     const dateOnly = new Date(today.toISOString().split('T')[0]); 
@@ -86,6 +118,7 @@ exports.checking = async (req, res) => {
     }
 
     const { token_location, notes, file_images } = req.body;
+    console.log('Received check-in data:', req.body);
     const payload = jwtUtils.verifyToken(token_location);
 
     console.log(payload);
