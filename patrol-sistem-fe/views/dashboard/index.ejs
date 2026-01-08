@@ -1,13 +1,206 @@
-<span style="font-size:20px;font-weight:600;">
-    <%= title %>
-</span>
-<div style="margin-top: 19px;">
-    <div style="display: flex; gap: 10px;">
-        <div>
-            <%- include('card-date', { cardTitle: 'From', date:'Choose Date' }) %>
+<div style="display: flex;">
+    <span style="font-size:20px;font-weight:600;">
+        <%= title %>
+    </span>
+    <div style="display:flex;margin-left: auto; margin-right: 8px;">
+        <div style="margin-right: 10px;">
+            <%- include('card-date', { cardTitle: 'Dari', propId:'from' }) %>
         </div>
         <div>
-            <%- include('card-date', { cardTitle: 'To', date:'Choose Date' }) %>
+            <%- include('card-date', { cardTitle: 'Ke', propId:'to' }) %>
         </div>
     </div>
 </div>
+<div style="margin-top: 19px;">
+    <div class="table-container" style="overflow: auto; max-height: 500px; padding: 5px;">
+        <div style="background:#0d8bdc; color:white; padding:15px; font-size:20px; font-weight:600; border-radius:10px 10px 0 0;">
+            Patrol Data Graph
+        </div>
+
+        <div style="background:#fff; padding:20px; border-radius:0 0 10px 10px;">
+            <canvas id="patrolChart" height="120"></canvas>
+        </div>
+
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<script>
+    $('.tanggal').change(function () {
+        const fromDate = document.getElementById('from').value;
+        const toDate = document.getElementById('to').value;
+        console.log('From:', fromDate, 'To:', toDate);
+        loadPatrolData();
+    });
+
+
+    function loadPatrolData(page, rowCount) {
+        currentPage = page || 1;
+        rowCount = rowCount || 10;
+        const fromDate = document.getElementById('from').value;
+        const toDate = document.getElementById('to').value;
+
+        fetch(`<%= API_URL %>/admin/dashboard-data?page=${page}&rowCount=${rowCount}&date_from=${fromDate}&date_to=${toDate}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            }
+        })
+            .then(async (response) => {
+                console.log(response);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server response:', errorText);
+                    if (response.status === 401) {
+                        alert('❌ ' + errorText + ' On Menu Patrol Activity');
+                        // Redirect ke halaman login
+                        window.location.href = '/';
+                    } else {
+                        alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+                    }
+                    throw new Error('HTTP error ' + response.status);
+                }
+                let tableBody = '';
+                const data = await response.json();
+
+                if (!data || !Array.isArray(data.data) || data.data.length === 0) {
+                    document.getElementById('patrol-data').innerHTML = `
+                                    <tr><td colspan="6" class="text-center text-muted">Tidak ada data untuk rentang tanggal ini.</td></tr>`;
+                    return;
+                }
+
+                data.data.forEach((item, index) => {
+                });
+                renderChart(data.data);
+            })
+    }
+    function renderChart(patrolData) {
+        const ctx = document.getElementById('patrolChart').getContext('2d');
+
+        // Siapkan data untuk chart
+        const labels = patrolData.map(item => item.date);
+        const patrolCounts = patrolData.map(item => item.total);
+
+        // Hapus chart lama jika ada
+        if (window.patrolChartInstance) {
+            window.patrolChartInstance.destroy();
+        }
+
+        // Buat chart baru
+        window.patrolChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Jumlah Patrol',
+                    data: patrolCounts,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        precision: 0
+                    }
+                }
+            }
+        });
+    }
+
+    function showImage(url) {
+        if (!url) {
+            alert('Tidak ada gambar untuk dilihat.');
+            return;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+
+        const previewImage = document.getElementById('previewImage');
+        previewImage.src = ''; // reset gambar lama
+
+        // 🧠 Deteksi tipe URL
+        let type = 'unknown';
+        try {
+            const parsed = new URL(url);
+            const path = parsed.pathname.startsWith('/')
+                ? parsed.pathname.slice(1)
+                : parsed.pathname;
+
+            if (path.startsWith('upload')) type = 'path';
+            else if (path.startsWith('data:image')) type = 'base64';
+        } catch (err) {
+            // Jika bukan URL valid, mungkin base64 langsung
+            if (url.startsWith('data:image')) type = 'base64';
+        }
+
+        // 🔥 Aksi berdasarkan tipe
+        if (type === 'base64') {
+            previewImage.src = url; // langsung tampilkan
+        } else if (type === 'path') {
+            // fetch dari server
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'ngrok-skip-browser-warning': 'true',
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Gagal memuat gambar dari server: ' + response.status);
+                    }
+                    return response.blob();
+                })
+                .then(imageBlob => {
+                    const imageObjectURL = URL.createObjectURL(imageBlob);
+                    previewImage.src = imageObjectURL;
+                })
+                .catch(error => {
+                    console.error('Error memuat gambar:', error);
+                    alert('❌ Gambar gagal dimuat. Coba refresh');
+                    modal.hide();
+                });
+        } else {
+            alert('Format URL tidak dikenali.');
+            modal.hide();
+        }
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // === 1️⃣ Set default tanggal hari ini ===
+        const today = new Date();
+        const formatDate = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        const todayStr = formatDate(today);
+
+        // Ambil input date dan isi nilainya
+        const startInput = document.getElementById('from');
+        const endInput = document.getElementById('to');
+
+        if (startInput && endInput) {
+            startInput.value = todayStr;
+            endInput.value = todayStr;
+        }
+
+        // === 2️⃣ Setelah tanggal terisi, baru load data ===
+        loadPatrolData();
+
+        // === 3️⃣ Pas user ubah tanggal, reload data ===
+        $('.tanggal').change(function () {
+            loadPatrolData();
+        });
+    });
+</script>
