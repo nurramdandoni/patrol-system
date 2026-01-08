@@ -1,6 +1,14 @@
 <span style="font-size:20px;font-weight:600;">
     <%= title %>
 </span>
+<div style="display: flex;">
+    <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
+        <%- include('../component/insert-button', {name:'Lokasi', linkUrl:'',linkId:'insertLocation',linkClass:''}) %>
+    </div>
+    <div style="margin-right: 8px; margin-top: 12px;">
+        <%- include('../component/edit-button', {name:'Lokasi', linkUrl:'',linkId:'editLocation',linkClass:''}) %>
+    </div>
+</div>
 <div style="margin-top: 19px;">
     <div class="table-container" style="overflow: auto; max-height: 500px; padding: 5px;">
         <table style="
@@ -257,13 +265,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Show INSERT
             if (menu.menu_permission.includes("create")) {
-                const btn = document.getElementById("btnPrintPDF");
+                const btn = document.getElementById("insertLocation");
                 if (btn) btn.style.display = "inline-block";
             }
 
             // Show EDIT
             if (menu.menu_permission.includes("edit")) {
-                const btn = document.getElementById("btnPrintPDF");
+                const btn = document.getElementById("editLocation");
                 if (btn) btn.style.display = "inline-block";
             }
 
