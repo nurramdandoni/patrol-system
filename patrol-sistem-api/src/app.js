@@ -15,6 +15,7 @@ const corsOptions = {
       'http://210.79.191.133:4000',
       'http://210.79.191.133',
       'https://kinenta-guard.paylite.co.id',  // ← Cek domain Anda yang benar
+      'https://api-kinenta-guard.paylite.co.id',
       'http://security-kinenta.paylite.co.id'
     ];
     
