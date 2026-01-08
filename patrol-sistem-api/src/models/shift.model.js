@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  const Location = sequelize.define('location', {
+  const Shift = sequelize.define('shift', {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
@@ -10,13 +10,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(25),
       allowNull: true,
     },
-    images: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
+    start_time: {
+      type: DataTypes.TIME,
+      allowNull: false,
     },
-    location_type_id: { 
-      type: DataTypes.INTEGER, 
-      allowNull: true
+    end_time: {
+      type: DataTypes.TIME,
+      allowNull: false,
     },
     status: {
       type: DataTypes.TINYINT,
@@ -24,9 +24,9 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 1,
     },
   }, {
-    tableName: 'location',
+    tableName: 'shift',
     timestamps: true,
   });
 
-  return Location;
+  return Shift;
 };

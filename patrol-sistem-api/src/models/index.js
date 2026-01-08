@@ -10,9 +10,12 @@ const models = {
   Location: require('./location.model')(sequelize, DataTypes),
   PatrolActivity: require('./patrol_activity.model')(sequelize, DataTypes),
   Employee: require('./employee.model')(sequelize, DataTypes),
+  LocationType: require('./location_type.model')(sequelize, DataTypes),
+  Schedule: require('./schedule.model')(sequelize, DataTypes),
+  Shift: require('./shift.model')(sequelize, DataTypes)
 };
 
-const { Role, Menu, Permission, RoleMenuPermission, User, Location, PatrolActivity, Employee } = models;
+const { Role, Menu, Permission, RoleMenuPermission, User, Location, PatrolActivity, Employee, LocationType, Schedule, Shift } = models;
 
 // Employee ↔ User
 User.hasOne(Employee, { foreignKey: 'user_id' });
@@ -51,6 +54,19 @@ Role.hasMany(RoleMenuPermission, { foreignKey: 'role_id' });
 // PatrolActvity ↔ Location
 PatrolActivity.belongsTo(Location, { foreignKey: 'location_id' });
 PatrolActivity.belongsTo(User, { foreignKey: 'check_by' });
+
+// LocationType ↔ Location
+Location.belongsTo(LocationType, { foreignKey: 'location_type_id' });
+
+// LocationType ↔ Schedule
+Schedule.belongsTo(LocationType, { foreignKey: 'location_type_id' });
+
+// Schedule ↔ User (checker)
+Schedule.belongsTo(User, { foreignKey: 'checker_id' });
+
+// Shift ↔ Schedule
+Schedule.belongsTo(Shift, { foreignKey: 'shift_id' });
+
 
 models.sequelize = sequelize;
 models.Sequelize = Sequelize;
