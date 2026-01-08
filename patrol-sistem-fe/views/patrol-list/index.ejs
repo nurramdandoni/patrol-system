@@ -52,6 +52,8 @@
         </table>
     </div>
 </div>
+<div id="pagination" class="d-flex justify-content-center mt-3"></div>
+
 
 <!-- Modal Preview Gambar -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
@@ -85,6 +87,10 @@
 </div>
 
 <script>
+    let currentPage = 1;
+    let rowCount = 10;
+    let totalData = 0;
+
     document.addEventListener("DOMContentLoaded", () => {
 
         const pathNow = window.location.pathname;
@@ -112,15 +118,19 @@
                 }
             }
         });
-
+        loadPatrolData();
     });
-    fetch('<%= API_URL %>/patrol/list', {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token'),
-            'ngrok-skip-browser-warning': 'true'
-        }
-    })
+
+    function loadPatrolData(page, rowCount) {
+        currentPage = page || 1;
+        rowCount = rowCount || 10;
+        fetch(`<%= API_URL %>/patrol/list?page=${page}&rowCount=${rowCount}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        })
         .then(async (response) => {
             if (!response.ok) {
                 const errorText = await response.text();
@@ -166,7 +176,44 @@
             });
             // console.log(tableBody);
             document.getElementById('patrol-data').innerHTML = tableBody;
+            renderPagination(data.totalData, rowCount);
         })
+    }
+    function renderPagination(totalData, rowCount) {
+        const totalPages = Math.ceil(totalData / rowCount);
+        let html = `<nav><ul class="pagination">`;
+
+        // Prev
+        html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <button class="page-link" onclick="loadPatrolData(${currentPage - 1})">
+            &laquo;
+        </button>
+        </li>`;
+
+        // Number
+        for (let i = 1; i <= totalPages; i++) {
+            if (i >= currentPage - 2 && i <= currentPage + 2) {
+                html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <button class="page-link" onclick="loadPatrolData(${i}, ${rowCount})">
+                    ${i}
+                </button>
+                </li>`;
+            }
+        }
+
+        // Next
+        html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <button class="page-link" onclick="loadPatrolData(${currentPage + 1})">
+            &raquo;
+        </button>
+        </li>`;
+
+        html += `</ul></nav>`;
+        document.getElementById('pagination').innerHTML = html;
+    }
 
     function showImage(url) {
         if (!url) {

@@ -30,7 +30,7 @@ exports.list = async (req, res) => {
     console.log('JWT payload:', payload);
     
     const page = parseInt(req.query.page) || 1;
-    const rowCount = parseInt(req.query.rowCount) || 100;
+    const rowCount = parseInt(req.query.rowCount) || 10;
     const offset = (page - 1) * rowCount;
 
     let count;
