@@ -237,6 +237,12 @@
             <strong>Checker:</strong> ${activity.user && activity.user.employee ? activity.user.employee.full_name : 'N/A'}<br>
             <strong>Waktu Cek:</strong> ${new Date(activity.createdAt).toLocaleString()}<br>
             <strong>Catatan:</strong> ${activity.check_notes || '-'}
+            <strong><br>Foto:</strong>
+            <div>
+              ${activity.check_image && activity.check_image.trim() !== ''
+                ? `<img src="<%= API_URL %>/${activity.check_image}" alt="Foto Patrol" class="img-fluid rounded" style="max-width: 200px; cursor:pointer;" onclick="showImage('<%= API_URL %>/${activity.check_image}')">`
+                : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> Not Capture</span>'
+              }
           </div>
           <div>
             <strong>Status:</strong> ${activity.check_status == 1 ? '<span class="badge bg-success">Checked</span>' : '<span class="badge bg-danger">Not Checked</span>'}
