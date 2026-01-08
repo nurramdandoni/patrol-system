@@ -1,3 +1,6 @@
+<script>
+  window.patrolActivityStore = {};
+</script>
 <div style="display: flex;">
     <span style="font-size:20px;font-weight:600;">
         <%= title %>
@@ -64,6 +67,23 @@
   </div>
 </div>
 
+<!-- Modal Detail Checker -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-center">
+      <div class="modal-body">
+        <div id="detailContent" class="text-start text-white">
+            List Data
+          <!-- Isi detail akan dimuat di sini -->
+        </div>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
     document.addEventListener("DOMContentLoaded", () => {
 
@@ -117,6 +137,7 @@
             let tableBody = '';
             const data = await response.json();
             data.data.forEach((item, index) => {
+                window.patrolActivityStore[item.id] = item.patrol_activity;
                 tableBody += `
           <tr>
             <td>${index + 1}</td>
@@ -135,7 +156,7 @@
             <td>
               ${item.patrol_activity.length > 0
                         ? item.patrol_activity[0].check_status == 1
-                            ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Checked</span>'
+                            ? `<span class="badge bg-success" style="cursor:pointer" onclick="showDetail('${item.id}')"><i class="bi bi-check-lg"></i> Checked ${item.patrol_activity.length}/6</span>`
                             : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
                         : '<span class="badge bg-secondary">-</span>'
                     }
@@ -204,5 +225,29 @@
             alert('Format URL tidak dikenali.');
             modal.hide();
         }
+    }
+    function showDetail(id) {
+        console.log(window.patrolActivityStore);
+        const activities = window.patrolActivityStore[id];
+        let detailHTML = '<h5>Detail Checker</h5><ul class="list-group">';
+        activities.forEach(activity => {
+            detailHTML += `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>Checker:</strong> ${activity.user && activity.user.employee ? activity.user.employee.full_name : 'N/A'}<br>
+            <strong>Waktu Cek:</strong> ${new Date(activity.createdAt).toLocaleString()}<br>
+            <strong>Catatan:</strong> ${activity.check_notes || '-'}
+          </div>
+          <div>
+            <strong>Status:</strong> ${activity.check_status == 1 ? '<span class="badge bg-success">Checked</span>' : '<span class="badge bg-danger">Not Checked</span>'}
+          </div>
+        </li>
+      `;
+        });
+        detailHTML += '</ul>';
+        const detailContent = document.getElementById('detailContent');
+        detailContent.innerHTML = detailHTML;
+        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+        modal.show();
     }
 </script>

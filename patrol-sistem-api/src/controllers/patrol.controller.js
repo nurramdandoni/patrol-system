@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { Location, PatrolActivity, User, Schedule} = require('../models');
+const { Location, PatrolActivity, User, Schedule, Employee} = require('../models');
 const jwtUtils = require('../utils/jwt');
 const { json, Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
@@ -77,7 +77,12 @@ exports.list = async (req, res) => {
       limit: rowCount,
       offset,
       include: [
-        {model:User, attributes:['id','username']},
+        {model:User, 
+          attributes:['id','username'],
+          include:[
+            {model:Employee, attributes:['id','full_name']}
+          ]
+        },
         {model:Location, attributes:['id','name']}
       ]
     });
