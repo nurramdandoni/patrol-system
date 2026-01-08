@@ -38,9 +38,13 @@ exports.list = async (req, res) => {
     if(specialRoleIds.includes(payload.role_id)){
       console.log("special role");
       // cek jadwal untuk role ini
+      const dateOnlySpecialRole = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'Asia/Jakarta'
+      });
+      console.log("hari ini", dateOnlySpecialRole);
       const { count: countSchedule, rows: rowsSchedule } = await Schedule.findAndCountAll({
         where:{
-          schedule_date: new Date(),
+          schedule_date: dateOnlySpecialRole,
           checker_id: payload.user_id
         }
       });

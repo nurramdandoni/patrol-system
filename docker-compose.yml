@@ -9,7 +9,7 @@ services:
     volumes:
       - ./patrol-sistem-api/uploads:/app/uploads
       - ./patrol-sistem-api/.env:/app/.env
-      # - ./patrol-sistem-api:/app
+      - ./patrol-sistem-api:/app
       - /app/node_modules
     environment:
       NODE_ENV: production
