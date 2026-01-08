@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { Location, PatrolActivity, User, Schedule, Employee} = require('../models');
+const { Location, PatrolActivity, User, Schedule, Employee, LocationType} = require('../models');
 const jwtUtils = require('../utils/jwt');
 const { json, Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
@@ -56,6 +56,11 @@ exports.list = async (req, res) => {
       ({ count, rows } = await Location.findAndCountAll({
         limit: rowCount,
         offset,
+        include: [
+          {model: LocationType,
+            attributes: ['id','name']
+          }
+        ],
         where:{
           location_type_id: { [Op.in]: locationType }
         }
@@ -64,6 +69,11 @@ exports.list = async (req, res) => {
       ({ count, rows } = await Location.findAndCountAll({
         limit: rowCount,
         offset,
+        include: [
+          {model: LocationType,
+            attributes: ['id','name']
+          }
+        ],
       }));
     }
     
@@ -88,11 +98,13 @@ exports.list = async (req, res) => {
     });
 
     let data = [];
+    console.log(rows);
     rows.forEach((item) => {
         data.push({
             id: item.id,
             name: item.name,
             token_location: jwtUtils.generateToken({location_id: item.id}),
+            location_type: item.location_type.name,
             patrol_activity: rowsActivity.filter(pa => pa.location_id === item.id)
         });
     });

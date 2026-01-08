@@ -1,4 +1,4 @@
-const { Location } = require("../models");
+const { Location, LocationType } = require("../models");
 const { Op } = require("sequelize");
 const checkPermission = require("../utils/checkPermission");
 const jwtUtils = require("../utils/jwt");
@@ -24,6 +24,11 @@ exports.getAll = async (req, res) => {
     const { count, rows } = await Location.findAndCountAll({
       limit: rowCount,
       offset,
+      include: [
+        {model: LocationType,
+          attributes: ['id','name']
+        }
+      ],
     });
 
     for (const item of rows) {
