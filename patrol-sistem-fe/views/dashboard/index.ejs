@@ -175,8 +175,7 @@
 
 
     document.addEventListener('DOMContentLoaded', () => {
-        // === 1️⃣ Set default tanggal hari ini ===
-        const today = new Date();
+        // === Helper format yyyy-mm-dd ===
         const formatDate = (date) => {
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -184,21 +183,26 @@
             return `${y}-${m}-${d}`;
         };
 
-        const todayStr = formatDate(today);
+        const today = new Date();
 
-        // Ambil input date dan isi nilainya
+        // 👉 awal bulan
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        const fromStr = formatDate(firstDayOfMonth);
+        const toStr = formatDate(today);
+
         const startInput = document.getElementById('from');
         const endInput = document.getElementById('to');
 
         if (startInput && endInput) {
-            startInput.value = todayStr;
-            endInput.value = todayStr;
+            startInput.value = fromStr;
+            endInput.value = toStr;
         }
 
-        // === 2️⃣ Setelah tanggal terisi, baru load data ===
+        // load data pertama kali
         loadPatrolData();
 
-        // === 3️⃣ Pas user ubah tanggal, reload data ===
+        // reload saat user ganti tanggal
         $('.tanggal').change(function () {
             loadPatrolData();
         });
