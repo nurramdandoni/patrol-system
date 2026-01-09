@@ -121,10 +121,12 @@
         #titleSidebar {
             display: flex;
         }
-
+        
         .body-content {
-            padding: 15px;
-            padding-top: 40px;
+            flex: 1;
+            width: 100%;
+            padding: 20px;
+
         }
 
         table tr td {
@@ -139,10 +141,12 @@
         @media (min-width: 600px) {
             .layout-wrapper {
                 display: flex;
+                min-height: 100vh;
             }
 
             .table-container {
-                width: 800px;
+                max-width: 100%;
+                overflow-x: auto;
             }
 
             .topbar {
@@ -165,15 +169,16 @@
 
             .sidebar {
                 position: static;
+                flex-shrink: 0;
                 width: 240px;
                 left: 0;
                 height: 100vh;
                 box-shadow: none;
             }
 
-            .content {
+            /* .content {
                 margin-left: 240px;
-            }
+            } */
 
         }
     </style>
