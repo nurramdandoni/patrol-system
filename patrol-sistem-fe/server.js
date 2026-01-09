@@ -71,6 +71,12 @@ app.get("/role", (req, res) => {
 app.get("/menu", (req, res) => {
   res.render("menu/index", { title: "Menu" });
 });
+app.get("/shift", (req, res) => {
+  res.render("shift/index", { title: "Shift" });
+});
+app.get("/schedule", (req, res) => {
+  res.render("schedule/index", { title: "Jadwal Patroli" });
+});
 app.get("/access", (req, res) => {
   res.render("access/index", { title: "Akses" });
 });
