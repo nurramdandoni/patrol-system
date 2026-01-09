@@ -3,10 +3,12 @@
 </span>
 <div style="display: flex;">
     <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/insert-button', {name:'Lokasi', linkUrl:'',linkId:'insertLocation',linkClass:''}) %>
+        <%- include('../component/insert-button', {name:'Lokasi',
+            linkUrl:'',linkId:'insertLocation',linkClass:'btn-insert'}) %>
     </div>
     <div style="margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/edit-button', {name:'Lokasi', linkUrl:'',linkId:'editLocation',linkClass:''}) %>
+        <%- include('../component/edit-button', {name:'Lokasi', linkUrl:'',linkId:'editLocation',linkClass:'btn-edit'})
+            %>
     </div>
 </div>
 <div style="margin-top: 19px;">
@@ -48,15 +50,36 @@
     <div id="pagination" class="d-flex justify-content-center mt-3"></div>
 
     <div style="margin-top: 5px;">
-        <%- include('../component/print-button', {name:'Cetak Barcode', linkUrl:'',linkId:'btnPrintPDF',linkClass:''}) %>
-        <!-- <button id="btnPrintPDF" class="btn btn-primary btn-sm">🖨️ Cetak Barcode</button> -->
+        <%- include('../component/print-button', {name:'Cetak Barcode', linkUrl:'',linkId:'btnPrintPDF',linkClass:''})
+            %>
+            <!-- <button id="btnPrintPDF" class="btn btn-primary btn-sm">🖨️ Cetak Barcode</button> -->
     </div>
     <div id="pdfContainer" class="mt-4 text-center">
         <!-- PDF akan ditampilkan di sini -->
     </div>
 </div>
 
+<!-- Modal Insert Update -->
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-start">
+                    <form id="dataFormContent">
+                        <!-- Form akan dimuat di sini dari js-->
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" id="saveData">Simpan</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let modeSave = 'insert'; // insert atau edit
     function loadPatrolData(page, rowCount) {
         currentPage = page || 1;
         rowCount = rowCount || 10;
@@ -67,53 +90,55 @@
                 'ngrok-skip-browser-warning': 'true'
             }
         })
-        .then(async (response) => {
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', errorText);
-                if (response.status === 401) {
-                    alert('❌ ' + errorText + ' On Menu Location');
-                    // Redirect ke halaman login
-                    window.location.href = '/';
-                } else {
-                    alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+            .then(async (response) => {
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server response:', errorText);
+                    if (response.status === 401) {
+                        alert('❌ ' + errorText + ' On Menu Location');
+                        // Redirect ke halaman login
+                        window.location.href = '/';
+                    } else {
+                        alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+                    }
+                    throw new Error('HTTP error ' + response.status);
                 }
-                throw new Error('HTTP error ' + response.status);
-            }
-            let tableBody = '';
-            const data = await response.json();
-            data.data.forEach((item, index) => {
-                tableBody += `
+                let tableBody = '';
+                const data = await response.json();
+                data.data.forEach((item, index) => {
+                    tableBody += `
           <tr style="border-bottom: 1px solid #e1e4e8; transition: 0.2s;">
-            <td><input type="checkbox" ${item.status != 1 ? 'disabled' : ''}/> &nbsp;${index + 1}</td>
+            <td>
+                <input type="hidden" class="location-id" value="${item.id}" />
+                <input type="checkbox" ${item.status != 1 ? 'disabled' : ''}/> &nbsp;${index + 1}</td>
             <td>${item.name}</td>
             <td>
               ${item.images != null
-                        ? item.images && item.images.trim() !== ''
-                            ? `<button style="cursor:pointer;color: white;background-color: green;border-radius: 5px; border: none;" onclick="showImage('<%= API_URL %>/${item.images}')">
+                            ? item.images && item.images.trim() !== ''
+                                ? `<button style="cursor:pointer;color: white;background-color: green;border-radius: 5px; border: none;" onclick="showImage('<%= API_URL %>/${item.images}')">
                         <i class="fa fa-camera"></i> onCapture
                       </button>`
-                            : '<button style="color: white; background-color: red;border-radius: 5px; border: none;">notCapture</button>'
-                        : '<span>-</button>'
-                    }
+                                : '<button style="color: white; background-color: red;border-radius: 5px; border: none;">notCapture</button>'
+                            : '<span>-</button>'
+                        }
             </td>
             <td>
               ${item.status != null
-                        ? item.status == 1
-                            ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Active</span>'
-                            : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Non Active</span>'
-                        : '<span class="badge bg-secondary">-</span>'
-                    }
+                            ? item.status == 1
+                                ? '<span class="badge bg-success"><i class="bi bi-check-lg"></i> Active</span>'
+                                : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Non Active</span>'
+                            : '<span class="badge bg-secondary">-</span>'
+                        }
                 <input type="hidden" class="qr-value" value="${item.token_location}" />
             </td>
             <td>${item.location_type.name}</td>
           </tr>
         `;
-            });
-            console.log(tableBody);
-            document.getElementById('patrol-data').innerHTML = tableBody;
-            renderPagination(data.totalData, rowCount);
-        })
+                });
+                console.log(tableBody);
+                document.getElementById('patrol-data').innerHTML = tableBody;
+                renderPagination(data.totalData, rowCount);
+            })
     }
     function renderPagination(totalData, rowCount) {
         const totalPages = Math.ceil(totalData / rowCount);
@@ -255,34 +280,175 @@
 </script>
 <!-- grant access button -->
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
 
-    const pathNow = window.location.pathname;
-    const insertCheck = JSON.parse(localStorage.getItem('menus'));
+        const pathNow = window.location.pathname;
+        const insertCheck = JSON.parse(localStorage.getItem('menus'));
 
-    insertCheck.forEach(menu => {
-        if (pathNow === menu.menu_path) {
+        insertCheck.forEach(menu => {
+            if (pathNow === menu.menu_path) {
 
-            // Show INSERT
-            if (menu.menu_permission.includes("create")) {
-                const btn = document.getElementById("insertLocation");
-                if (btn) btn.style.display = "inline-block";
+                // Show INSERT
+                if (menu.menu_permission.includes("create")) {
+                    const btn = document.getElementById("insertLocation");
+                    if (btn) btn.style.display = "inline-block";
+                }
+
+                // Show EDIT
+                if (menu.menu_permission.includes("edit")) {
+                    const btn = document.getElementById("editLocation");
+                    if (btn) btn.style.display = "inline-block";
+                }
+
+                // Show PRINT
+                if (menu.menu_permission.includes("print")) {
+                    const btn = document.getElementById("btnPrintPDF");
+                    if (btn) btn.style.display = "inline-block";
+                }
             }
+        });
+        document.querySelectorAll(".btn-insert").forEach(btn => {
+            btn.addEventListener("click", function () {
+                modeSave = 'insert';
+                openModal("insert");
+            });
+        });
+        document.querySelectorAll(".btn-edit").forEach(btn => {
+            btn.addEventListener("click", function () {
+                modeSave = 'edit';
+                openModal("edit");
+            });
+        });
+        loadPatrolData();
+    });
 
-            // Show EDIT
-            if (menu.menu_permission.includes("edit")) {
-                const btn = document.getElementById("editLocation");
-                if (btn) btn.style.display = "inline-block";
-            }
-
-            // Show PRINT
-            if (menu.menu_permission.includes("print")) {
-                const btn = document.getElementById("btnPrintPDF");
-                if (btn) btn.style.display = "inline-block";
+    function openModal(mode) {
+        // alert("Open Modal");
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+        if (mode === "insert") {
+            modal.show();
+            document.getElementById("dataFormContent").innerHTML = `
+            <h5>Tambah Lokasi Baru</h5>
+            <div class="mb-3">
+                <label for="locationName" class="form-label">Nama Lokasi</label>
+                <input type="text" class="form-control" id="locationName" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="locationType" class="form-label">Tipe Lokasi</label>
+                <select class="form-select" id="locationType" name="location_type_id" required>
+                    <option value="">Pilih Tipe Lokasi</option>
+                    <option value="1">Kawasan Non Berikat</option>
+                    <option value="2">Kawasan Berikat</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="locationStatus" class="form-label">Status</label>
+                <select class="form-select" id="locationStatus" name="status" required>
+                    <option value="1">Active</option>
+                    <option value="0">Non Active</option>
+                </select>
+            </div>
+            `;
+        } else if (mode === "edit") {
+            // Ambil data dari checkbox yang dicentang
+            const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+            if (checked.length !== 1) {
+                alert('⚠️ Pilih satu lokasi untuk diedit!');
+                modal.hide();
+                return;
+            } else {
+                modal.show();
+                const row = checked[0].closest('tr');
+                const locationId = row.querySelector('.location-id').value;
+                $.ajax({
+                    url: `<%= API_URL %>/admin/location/${locationId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: function (data) {
+                        console.log('Data lokasi diterima:', data);
+                        document.getElementById("dataFormContent").innerHTML = `
+                        <h5>Edit Lokasi</h5>
+                        <div class="mb-3">
+                            <input type="hidden" name="id" id="locationId" value="${data.id}" />
+                            <label for="locationName" class="form-label">Nama Lokasi</label>
+                            <input type="text" class="form-control" id="locationName" name="name" value="${data.name}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="locationType" class="form-label">Tipe Lokasi</label>
+                            <select class="form-select" id="locationType" name="location_type_id" required>
+                                <option value="">Pilih Tipe Lokasi</option>
+                                <option value="1" ${data.location_type_id == '1' ? 'selected' : ''}>Kawasan Non Berikat</option>
+                                <option value="2" ${data.location_type_id == '2' ? 'selected' : ''}>Kawasan Berikat</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="locationStatus" class="form-label">Status</label>
+                            <select class="form-select" id="locationStatus" name="status" required>
+                                <option value="1" ${data.status == '1' ? 'selected' : ''}>Active</option>
+                                <option value="0" ${data.status == '0' ? 'selected' : ''}>Non Active</option>
+                            </select>
+                        </div>
+                        `;
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching location data:', error);
+                        alert('❌ Gagal mengambil data lokasi. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
             }
         }
+    }
+    $(document).ready(function () {
+        $('#saveData').click(function () {
+            const jsonData = {};
+            $('#dataFormContent').serializeArray().forEach(item => {
+                jsonData[item.name] = item.value;
+            });
+            console.log(jsonData);
+            if (modeSave === 'insert') {
+                // Insert mode
+                $.ajax({
+                    url: '<%= API_URL %>/admin/location',
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Lokasi berhasil ditambahkan!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error inserting location:', error);
+                        alert('❌ Gagal menambahkan lokasi. Silakan coba lagi.');
+                    }
+                });
+            }else if (modeSave === 'edit') {
+                $.ajax({
+                    url: `<%= API_URL %>/admin/location/${jsonData.id}`,
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Lokasi berhasil diperbarui!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating location:', error);
+                        alert('❌ Gagal memperbarui lokasi. Silakan coba lagi.');
+                    }
+                });
+            }
+        });
     });
-    loadPatrolData();
-
-});
 </script>
