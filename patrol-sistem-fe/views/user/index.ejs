@@ -5,10 +5,10 @@
 </div>
 <div style="display: flex;">
     <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/insert-button', {name:'Pengguna', linkUrl:'',linkId:'insertPengguna',linkClass:''}) %>
+        <%- include('../component/insert-button', {name:'Pengguna', linkUrl:'',linkId:'insertPengguna',linkClass:'btn-insert'}) %>
     </div>
     <div style="margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/edit-button', {name:'Pengguna', linkUrl:'',linkId:'editPengguna',linkClass:''}) %>
+        <%- include('../component/edit-button', {name:'Pengguna', linkUrl:'',linkId:'editPengguna',linkClass:'btn-edit'}) %>
     </div>
 </div>
 <div style="margin-top: 19px;">
@@ -62,7 +62,27 @@
   </div>
 </div>
 
+<!-- Modal Insert Update -->
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-start">
+                    <form id="dataFormContent">
+                        <!-- Form akan dimuat di sini dari js-->
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" id="saveData">Simpan</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let modeSave = 'insert'; // insert atau edit
     function loadPatrolData(page, rowCount) {
         currentPage = page || 1;
         rowCount = rowCount || 10;
@@ -93,6 +113,7 @@
                 tableBody += `
           <tr>
             <td>
+                <input type="hidden" class="user-id" value="${item.id}" />
                 <input type="checkbox"/> &nbsp;${index + 1}
                 <input type="hidden" class="dataId" value="${item.id}" />
             </td>
@@ -173,6 +194,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+    document.querySelectorAll(".btn-insert").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'insert';
+            openModal("insert");
+        });
+    });
+    document.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'edit';
+            openModal("edit");
+        });
+    });
     loadPatrolData();
 
 });
@@ -189,23 +222,152 @@ document.addEventListener("change", function(e) {
     }
 });
 
-
-$("#editPengguna").click(function(){
-    const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
-
-        if (checked.length === 0) {
-            alert('⚠️ Pilih minimal satu data dulu!');
-            return;
+function loadRoleOptions(selectedId = null) {
+    return $.ajax({
+        url: `<%= API_URL %>/admin/role`,
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'ngrok-skip-browser-warning': 'true'
         }
-        // Buat array objek sesuai format { id, dataId }
-        const selectedData = checked.map(cb => {
-            const row = cb.closest('tr');
-            const dataId = row.querySelector('.dataId').value;
-            return { id: dataId };
+    }).then(data => {
+        let roleSelect = `
+            <select class="form-select" id="roleSelect" name="role_id" required>
+                <option value="" disabled ${selectedId ? '' : 'selected'}>
+                    Pilih Role
+                </option>
+        `;
+
+        data.data.forEach(role => {
+            const selected = role.id == selectedId ? 'selected' : '';
+            roleSelect += `
+                <option value="${role.id}" ${selected}>
+                    ${role.name}
+                </option>
+            `;
         });
 
-        console.log('Data dikirim ke backend:', selectedData);
+        roleSelect += `</select>`;
+        return roleSelect;
+    });
+}
 
-        console.log(checked);
-});
+
+async function openModal(mode) {
+        // alert("Open Modal");
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+        if (mode === "insert") {
+            modal.show();
+            let dataRoleOptions = await loadRoleOptions();
+            document.getElementById("dataFormContent").innerHTML = `
+            <h5>Tambah Pengguna Baru</h5>
+            <div class="mb-3">
+                <label for="userName" class="form-label">Username</label>
+                <input type="text" class="form-control" id="userName" name="username" required>
+            </div>
+            <div class="mb-3">
+                <label for="role" class="form-label">Role</label>
+                ${dataRoleOptions}
+            </div>
+            <div class="mb-3">
+                <label for="pass" class="form-label">Password</label>
+                <input type="password" class="form-control" id="pass" name="password" required>
+            </div>
+            `;
+        } else if (mode === "edit") {
+            // Ambil data dari checkbox yang dicentang
+            const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+            if (checked.length !== 1) {
+                alert('⚠️ Pilih satu Pengguna untuk diedit!');
+                modal.hide();
+                return;
+            } else {
+                modal.show();
+                const row = checked[0].closest('tr');
+                const userId = row.querySelector('.user-id').value;
+                $.ajax({
+                    url: `<%= API_URL %>/admin/user/${userId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: async function (data) {
+                        let dataRoleOptions = await loadRoleOptions(data.role_id);
+                        console.log('Data user diterima:', data);
+                        document.getElementById("dataFormContent").innerHTML = `
+                        <h5>Edit Pengguna</h5>
+                        <div class="mb-3">
+                            <input type="hidden" name="id" id="userId" value="${data.id}" />
+                            <label for="userName" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="userName" name="username" value="${data.username}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label for="roleDescription" class="form-label"> Role</label>
+                            ${dataRoleOptions}
+                        </div>
+                        <div class="mb-3">
+                            <label for="pass" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="pass" name="password" required>
+                        </div>
+                        `;
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching role data:', error);
+                        alert('❌ Gagal mengambil data role. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
+            }
+        }
+    }
+    $(document).ready(function () {
+        $('#saveData').click(function () {
+            const jsonData = {};
+            $('#dataFormContent').serializeArray().forEach(item => {
+                jsonData[item.name] = item.value;
+            });
+            console.log(jsonData);
+            if (modeSave === 'insert') {
+                // Insert mode
+                $.ajax({
+                    url: '<%= API_URL %>/admin/user',
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Pengguna berhasil ditambahkan!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error inserting user:', error);
+                        alert('❌ Gagal menambahkan pengguna. Silakan coba lagi.');
+                    }
+                });
+            }else if (modeSave === 'edit') {
+                $.ajax({
+                    url: `<%= API_URL %>/admin/user/${jsonData.id}`,
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Pengguna berhasil diperbarui!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating user:', error);
+                        alert('❌ Gagal memperbarui pengguna. Silakan coba lagi.');
+                    }
+                });
+            }
+        });
+    });
 </script>
