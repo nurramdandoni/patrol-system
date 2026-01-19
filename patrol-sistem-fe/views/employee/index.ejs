@@ -5,10 +5,10 @@
 </div>
 <div style="display: flex;">
     <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/insert-button', {name:'Pegawai', linkUrl:'',linkId:'insertPegawai',linkClass:''}) %>
+        <%- include('../component/insert-button', {name:'Pegawai', linkUrl:'',linkId:'insertPegawai',linkClass:'btn-insert'}) %>
     </div>
     <div style="margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/edit-button', {name:'Pegawai', linkUrl:'',linkId:'editPegawai',linkClass:''}) %>
+        <%- include('../component/edit-button', {name:'Pegawai', linkUrl:'',linkId:'editPegawai',linkClass:'btn-edit'}) %>
     </div>
 </div>
 <div style="margin-top: 19px;">
@@ -62,7 +62,27 @@
   </div>
 </div>
 
+<!-- Modal Insert Update -->
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-start">
+                    <form id="dataFormContent">
+                        <!-- Form akan dimuat di sini dari js-->
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" id="saveData">Simpan</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let modeSave = 'insert'; // insert atau edit
     let currentPage = 1;
     let rowCount = 10;
     let totalData = 0;
@@ -96,11 +116,15 @@
                 tableBody += `
           <tr>
             <td>
+                <input type="hidden" class="employee-id" value="${item.id}" />
                 <input type="checkbox"/> &nbsp;${index + 1}
                 <input type="hidden" class="dataId" value="${item.id}" />
             </td>
             <td>${item.nip}</td>
-            <td>${item.full_name}</td>
+            <td>
+                ${item.full_name}
+                ${item.user_id == null ? '<span class="badge bg-secondary"> User Not Set</span>' : ''}
+            </td>
             <td>${item.email}</td>
           </tr>
         `;
@@ -178,6 +202,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+    document.querySelectorAll(".btn-insert").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'insert';
+            openModal("insert");
+        });
+    });
+    document.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'edit';
+            openModal("edit");
+        });
+    });
     loadPatrolData();
 
 });
@@ -195,22 +231,210 @@ document.addEventListener("change", function(e) {
 });
 
 
-$("#editPegawai").click(function(){
-    const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
-
-        if (checked.length === 0) {
-            alert('⚠️ Pilih minimal satu data dulu!');
-            return;
+function loadUserOptions(selectedId = null) {
+    return $.ajax({
+        url: `<%= API_URL %>/admin/user`,
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'ngrok-skip-browser-warning': 'true'
         }
-        // Buat array objek sesuai format { id, dataId }
-        const selectedData = checked.map(cb => {
-            const row = cb.closest('tr');
-            const dataId = row.querySelector('.dataId').value;
-            return { id: dataId };
+    }).then(data => {
+        let userSelect = `
+            <select class="form-select" id="userSelect" name="user_id" required>
+                <option value="" disabled ${selectedId ? '' : 'selected'}>
+                    Pilih User
+                </option>
+        `;
+
+        data.data.forEach(user => {
+            const selected = user.id == selectedId ? 'selected' : '';
+            userSelect += `
+                <option value="${user.id}" ${selected}>
+                    ${user.username}
+                </option>
+            `;
         });
 
-        console.log('Data dikirim ke backend:', selectedData);
+        userSelect += `</select>`;
+        return userSelect;
+    });
+}
 
-        console.log(checked);
-});
+
+async function openModal(mode) {
+        // alert("Open Modal");
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+        if (mode === "insert") {
+            modal.show();
+            let dataUserOptions = await loadUserOptions();
+            document.getElementById("dataFormContent").innerHTML = `
+            <h5>Tambah Pegawai Baru</h5>
+            <div class="mb-3">
+                <label for="employeeNip" class="form-label">NIP</label>
+                <input type="text" class="form-control" id="employeeNip" name="nip" required>
+            </div>
+            <div class="mb-3">
+                <label for="user" class="form-label">User</label>
+                ${dataUserOptions}
+            </div>
+            <div class="mb-3">
+                <label for="nik" class="form-label">NIK</label>
+                <input type="text" class="form-control" id="nik" name="nik" required>
+            </div>
+            <div class="mb-3">
+                <label for="fullname" class="form-label">Nama Lengkap</label>
+                <input type="text" class="form-control" id="fullname" name="full_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="ttl" class="form-label">Tanggal Lahir</label>
+                <input type="date" class="form-control" id="ttl" name="ttl" required>
+            </div>
+            <div class="mb-3">
+                <label for="gender" class="form-label">Jenis Kelamin</label>
+                <select class="form-select" id="gender" name="gender" required>
+                    <option value="" disabled selected>Pilih Jenis Kelamin</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="phone" class="form-label">Nomor Telepon</label>
+                <input type="text" class="form-control" id="phone" name="phone" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="mb-3">
+                <label for="address" class="form-label">Alamat</label>
+                <input type="text" class="form-control" id="address" name="address" required>
+            </div>
+            `;
+        } else if (mode === "edit") {
+            // Ambil data dari checkbox yang dicentang
+            const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+            if (checked.length !== 1) {
+                alert('⚠️ Pilih satu Pegawai untuk diedit!');
+                modal.hide();
+                return;
+            } else {
+                modal.show();
+                const row = checked[0].closest('tr');
+                const userId = row.querySelector('.employee-id').value;
+                $.ajax({
+                    url: `<%= API_URL %>/admin/employee/${userId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: async function (data) {
+                        let dataUserOptions = await loadUserOptions(data.user_id);
+                        console.log('Data user diterima:', data);
+                        const ttlDate = data.ttl?.split('T')[0];
+                        console.log('Formatted TTL:', ttlDate);
+                        document.getElementById("dataFormContent").innerHTML = `
+                        <h5>Edit Pegawai</h5>
+                        <div class="mb-3">
+                            <input type="hidden" name="id" id="employeeId" value="${data.id}" />
+                            <label for="employeeNip" class="form-label">NIP</label>
+                            <input type="text" class="form-control" id="employeeNip" name="nip" value="${data.nip}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userDescription" class="form-label"> User</label>
+                            ${dataUserOptions}
+                        </div>
+                        <div class="mb-3">
+                            <label for="nik" class="form-label">NIK</label>
+                            <input type="text" class="form-control" id="nik" name="nik" required value="${data.nik}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="fullname" class="form-label">Nama Lengkap</label>
+                            <input type="text" class="form-control" id="fullname" name="full_name" required value="${data.full_name}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="ttl" class="form-label">Tanggal Lahir</label>
+                            <input type="date" class="form-control" id="ttl" name="ttl" required value="${ttlDate}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="gender" class="form-label">Jenis Kelamin</label>
+                            <select class="form-select" id="gender" name="gender" required>
+                                <option value="" disabled selected>Pilih Jenis Kelamin</option>
+                                <option value="male" ${data.gender === 'male' ? 'selected' : ''}>Laki-laki</option>
+                                <option value="female" ${data.gender === 'female' ? 'selected' : ''}>Perempuan</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Nomor Telepon</label>
+                            <input type="text" class="form-control" id="phone" name="phone" required value="${data.phone}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required value="${data.email}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Alamat</label>
+                            <input type="text" class="form-control" id="address" name="address" required value="${data.address}">
+                        </div>
+                        `;
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching user data:', error);
+                        alert('❌ Gagal mengambil data user. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
+            }
+        }
+    }
+    $(document).ready(function () {
+        $('#saveData').click(function () {
+            const jsonData = {};
+            $('#dataFormContent').serializeArray().forEach(item => {
+                jsonData[item.name] = item.value;
+            });
+            console.log(jsonData);
+            if (modeSave === 'insert') {
+                // Insert mode
+                $.ajax({
+                    url: '<%= API_URL %>/admin/employee',
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Pegawai berhasil ditambahkan!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error inserting user:', error);
+                        alert('❌ Gagal menambahkan pegawai. Silakan coba lagi.');
+                    }
+                });
+            }else if (modeSave === 'edit') {
+                $.ajax({
+                    url: `<%= API_URL %>/admin/employee/${jsonData.id}`,
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Pegawai berhasil diperbarui!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating user:', error);
+                        alert('❌ Gagal memperbarui pegawai. Silakan coba lagi. ()' + xhr.responseText);
+                    }
+                });
+            }
+        });
+    });
 </script>
