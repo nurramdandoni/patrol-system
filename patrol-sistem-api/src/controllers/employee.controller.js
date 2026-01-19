@@ -78,6 +78,20 @@ exports.create = async (req, res) => {
       });
     }
 
+    if (req.body.user_id != null) {
+      const existingEmployee = await Employee.findOne({
+        where: { user_id: req.body.user_id },
+      });
+
+      if (existingEmployee) {
+        return res.status(409).json({
+          status: "Error",
+          message: "User ini sudah digunakan oleh Employee lain.",
+        });
+      }
+    }
+
+
     const data = await Employee.create(req.body);
     res.status(201).json({
       status: "Success",
@@ -105,6 +119,23 @@ exports.update = async (req, res) => {
         status: "Access",
         message: "Access Not Allowed",
       });
+    }
+
+    if (req.body.user_id != null) {
+      const existingEmployee = await Employee.findOne({
+        where: {
+          user_id: req.body.user_id,
+          id: { [Op.ne]: req.params.id },
+        },
+      });
+
+
+      if (existingEmployee) {
+        return res.status(409).json({
+          status: "Error",
+          message: "User ini sudah digunakan oleh Employee lain.",
+        });
+      }
     }
 
     const data = await Employee.findByPk(req.params.id);
