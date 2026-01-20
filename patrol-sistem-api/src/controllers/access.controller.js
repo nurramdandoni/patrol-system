@@ -85,10 +85,22 @@ exports.getById = async (req, res) => {
       });
     }
 
-    const data = await RoleMenuPermission.findByPk(req.params.id);
-    if (!data)
-      return res.status(404).json({ message: "Data Tidak Ditemukan!" });
-    res.json(data);
+    const data = await RoleMenuPermission.findAll({
+      where: {
+        role_id: req.params.role_id,
+        menu_id: req.params.menu_id
+      },
+      include:[
+        {model:Role},
+        {model:Menu},
+        {model:Permission}
+      ],
+    });
+    if (data.length < 1){
+        return res.status(404).json({ message: "Data Tidak Ditemukan!" });
+    }else{
+        res.json(data);
+    }
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -137,14 +149,20 @@ exports.update = async (req, res) => {
       });
     }
 
-    const data = await RoleMenuPermission.findByPk(req.params.id);
-    if (!data)
-      return res.status(404).json({ message: "Data Tidak Ditemukan!" });
+    const [data, created] = await RoleMenuPermission.upsert(
+      {
+        role_id: req.params.role_id,
+        menu_id: req.params.menu_id,
+        ...req.body,
+      },
+      { returning: true }
+    );
 
-    await data.update(req.body);
     res.json({
       status: "Success",
-      message: "RoleMenuPermission berhasil diperbaharui!",
+      message: created
+        ? "RoleMenuPermission berhasil ditambahkan!"
+        : "RoleMenuPermission berhasil diperbaharui!",
       data,
     });
   } catch (err) {
