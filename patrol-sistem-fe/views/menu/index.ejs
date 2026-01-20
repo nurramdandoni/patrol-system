@@ -5,10 +5,10 @@
 </div>
 <div style="display: flex;">
     <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/insert-button', {name:'Menu', linkUrl:'',linkId:'insertMenu',linkClass:''}) %>
+        <%- include('../component/insert-button', {name:'Menu', linkUrl:'',linkId:'insertMenu',linkClass:'btn-insert'}) %>
     </div>
     <div style="margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/edit-button', {name:'Menu', linkUrl:'',linkId:'editMenu',linkClass:''}) %>
+        <%- include('../component/edit-button', {name:'Menu', linkUrl:'',linkId:'editMenu',linkClass:'btn-edit'}) %>
     </div>
 </div>
 <div style="margin-top: 19px;">
@@ -62,7 +62,27 @@
   </div>
 </div>
 
+<!-- Modal Insert Update -->
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-start">
+                    <form id="dataFormContent">
+                        <!-- Form akan dimuat di sini dari js-->
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" id="saveData">Simpan</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let modeSave = 'insert'; // insert atau edit
     let currentPage = 1;
     let rowCount = 10;
     let totalData = 0;
@@ -96,6 +116,7 @@
                 tableBody += `
           <tr>
             <td>
+                <input type="hidden" class="menu-id" value="${item.id}" />
                 <input type="checkbox"/> &nbsp;${index + 1}
                 <input type="hidden" class="dataId" value="${item.id}" />
             </td>
@@ -176,6 +197,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+    document.querySelectorAll(".btn-insert").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'insert';
+            openModal("insert");
+        });
+    });
+    document.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'edit';
+            openModal("edit");
+        });
+    });
     loadPatrolData();
     
 });
@@ -192,23 +225,167 @@ document.addEventListener("change", function(e) {
     }
 });
 
-
-$("#editMenu").click(function(){
-    const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
-
-        if (checked.length === 0) {
-            alert('⚠️ Pilih minimal satu data dulu!');
-            return;
+function loadMenuOptions(selectedId = null) {
+    return $.ajax({
+        url: `<%= API_URL %>/admin/menu`,
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            'ngrok-skip-browser-warning': 'true'
         }
-        // Buat array objek sesuai format { id, dataId }
-        const selectedData = checked.map(cb => {
-            const row = cb.closest('tr');
-            const dataId = row.querySelector('.dataId').value;
-            return { id: dataId };
+    }).then(data => {
+        let userSelect = `
+            <select class="form-select" id="menuSelect" name="parentId" required>
+                <option value="" disabled ${selectedId ? '' : 'selected'}>
+                    Pilih Menu
+                </option>
+        `;
+
+        data.data.forEach(menu => {
+            const selected = menu.id == selectedId ? 'selected' : '';
+            userSelect += `
+                <option value="${menu.id}" ${selected}>
+                    ${menu.name}
+                </option>
+            `;
         });
 
-        console.log('Data dikirim ke backend:', selectedData);
+        userSelect += `</select>`;
+        return userSelect;
+    });
+}
 
-        console.log(checked);
-});
+async function openModal(mode) {
+        // alert("Open Modal");
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+        if (mode === "insert") {
+            modal.show();
+            const menuOptions = await loadMenuOptions();
+            document.getElementById("dataFormContent").innerHTML = `
+            <h5>Tambah Menu Baru</h5>
+            <div class="mb-3">
+                <label for="menuName" class="form-label">Nama Menu</label>
+                <input type="text" class="form-control" id="menuName" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="menuPath" class="form-label">Path Menu</label>
+                <input type="text" class="form-control" id="menuPath" name="path" required>
+            </div>
+            <div class="mb-3">
+                <label for="menuIcon" class="form-label">Icon Menu</label>
+                <input type="text" class="form-control" id="menuIcon" name="icon" required>
+            </div>
+            <div class="mb-3">
+                <label for="menuIndex" class="form-label">Index Menu</label>
+                <input type="text" class="form-control" id="menuIndex" name="index" required>
+            </div>
+            <div class="mb-3">
+                <label for="parentMenu" class="form-label">Parent Menu</label>
+                ${menuOptions}
+            </div>
+            `;
+        } else if (mode === "edit") {
+            // Ambil data dari checkbox yang dicentang
+            const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+            if (checked.length !== 1) {
+                alert('⚠️ Pilih satu Menu untuk diedit!');
+                modal.hide();
+                return;
+            } else {
+                modal.show();
+                const row = checked[0].closest('tr');
+                const menuId = row.querySelector('.menu-id').value;
+                $.ajax({
+                    url: `<%= API_URL %>/admin/menu/${menuId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: async function (data) {
+                        console.log('Data menu diterima:', data);
+                        let menuOptions = await loadMenuOptions(data.parentId);
+                        document.getElementById("dataFormContent").innerHTML = `
+                        <h5>Edit Menu</h5>
+                        <div class="mb-3">
+                            <input type="hidden" name="id" id="menuId" value="${data.id}" />
+                            <label for="menuName" class="form-label">Nama Menu</label>
+                            <input type="text" class="form-control" id="menuName" name="name" required value="${data.name}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="menuPath" class="form-label">Path Menu</label>
+                            <input type="text" class="form-control" id="menuPath" name="path" required value="${data.path}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="menuIcon" class="form-label">Icon Menu</label>
+                            <input type="text" class="form-control" id="menuIcon" name="icon" required value="${data.icon}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="menuIndex" class="form-label">Index Menu</label>
+                            <input type="text" class="form-control" id="menuIndex" name="index" required value="${data.index}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="parentMenu" class="form-label">Parent Menu</label>
+                            ${menuOptions}
+                        </div>
+                        `;
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching menu data:', error);
+                        alert('❌ Gagal mengambil data menu. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
+            }
+        }
+    }
+    $(document).ready(function () {
+        $('#saveData').click(function () {
+            const jsonData = {};
+            $('#dataFormContent').serializeArray().forEach(item => {
+                jsonData[item.name] = item.value;
+            });
+            console.log(jsonData);
+            if (modeSave === 'insert') {
+                // Insert mode
+                $.ajax({
+                    url: '<%= API_URL %>/admin/menu',
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Menu berhasil ditambahkan!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error inserting menu:', error);
+                        alert('❌ Gagal menambahkan menu. Silakan coba lagi.');
+                    }
+                });
+            }else if (modeSave === 'edit') {
+                $.ajax({
+                    url: `<%= API_URL %>/admin/menu/${jsonData.id}`,
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Menu berhasil diperbarui!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating menu:', error);
+                        alert('❌ Gagal memperbarui menu. Silakan coba lagi. ()' + xhr.responseText);
+                    }
+                });
+            }
+        });
+    });
 </script>
