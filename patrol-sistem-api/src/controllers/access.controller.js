@@ -120,12 +120,40 @@ exports.create = async (req, res) => {
       });
     }
 
-    const data = await RoleMenuPermission.create(req.body);
-    res.status(201).json({
-      status: "Success",
-      message: "RoleMenuPermission berhasil ditambahkan!",
-      data,
+    const { role_id, menu_id, permission_id, status } = req.body
+
+    const exists = await RoleMenuPermission.findOne({
+      where: { 
+        role_id,
+        menu_id,
+        permission_id
+      }
     });
+
+    if (!exists) {
+      const data = await RoleMenuPermission.create(
+        { role_id, menu_id, permission_id, status }
+      );
+      res.json({
+        status: "Success",
+        message: "RoleMenuPermission berhasil ditambahkan!",
+        data,
+      });
+    } else {
+      const data = await RoleMenuPermission.update({ status }, {
+        where: {
+          role_id,
+          menu_id,
+          permission_id
+        },
+      });
+
+      res.json({
+        status: "Success",
+        message: "RoleMenuPermission berhasil diperbaharui!",
+        data,
+      });
+    }
   } catch (err) {
     res.status(500).json({
       status: "Error",
@@ -149,22 +177,42 @@ exports.update = async (req, res) => {
       });
     }
 
-    const [data, created] = await RoleMenuPermission.upsert(
-      {
-        role_id: req.params.role_id,
-        menu_id: req.params.menu_id,
-        ...req.body,
-      },
-      { returning: true }
-    );
+    const { role_id, menu_id } = req.params;
+    const { permission_id, status } = req.body;
 
-    res.json({
-      status: "Success",
-      message: created
-        ? "RoleMenuPermission berhasil ditambahkan!"
-        : "RoleMenuPermission berhasil diperbaharui!",
-      data,
+    const exists = await RoleMenuPermission.findOne({
+      where: { 
+        role_id,
+        menu_id,
+        permission_id
+      }
     });
+
+    if (!exists) {
+      const data = await RoleMenuPermission.create(
+        { role_id, menu_id, permission_id, status }
+      );
+      res.json({
+        status: "Success",
+        message: "RoleMenuPermission berhasil ditambahkan!",
+        data,
+      });
+    } else {
+      const data = await RoleMenuPermission.update({ status }, {
+        where: {
+          role_id,
+          menu_id,
+          permission_id
+        },
+      });
+
+      res.json({
+        status: "Success",
+        message: "RoleMenuPermission berhasil diperbaharui!",
+        data,
+      });
+    }
+
   } catch (err) {
     res.status(500).json({
       status: "Error",
