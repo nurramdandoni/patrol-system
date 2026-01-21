@@ -168,6 +168,8 @@ const roleRoutes = require('./routes/role.routes');
 const menuRoutes = require('./routes/menu.routes');
 const accessRoutes = require('./routes/access.routes');
 const pdfRoutes = require('./routes/pdf.routes');
+const shiftRoutes = require('./routes/shift.routes');
+const scheduleRoutes = require('./routes/schedule.routes');
 // const dashboardRoutes = require('./routes/dashboard.routes');
 
 app.use('/auth', authRoutes);
@@ -177,6 +179,8 @@ app.use('/admin', userRoutes);
 app.use('/admin', roleRoutes);
 app.use('/admin', menuRoutes);
 app.use('/admin', accessRoutes);
+app.use('/admin', shiftRoutes);
+app.use('/admin', scheduleRoutes);
 app.use('/admin', pdfRoutes);
 app.use('/admin', patrolActivityRoutes);
 app.use('/patrol', patrolRoutes);
