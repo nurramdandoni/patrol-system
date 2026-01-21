@@ -40,7 +40,7 @@ exports.getAll = async (req, res) => {
         let listPermission = [];
 
         rows.forEach(permission => {
-          if(element.id == permission.role_id && menus.id == permission.menu_id){
+          if(element.id == permission.role_id && menus.id == permission.menu_id && permission.status == 1){
               listPermission.push(permission.permission.action);
           }
         });
@@ -97,7 +97,7 @@ exports.getById = async (req, res) => {
       ],
     });
     if (data.length < 1){
-        return res.status(404).json({ message: "Data Tidak Ditemukan!" });
+        return res.status(200).json({ message: "Data Tidak Ditemukan!" });
     }else{
         res.json(data);
     }

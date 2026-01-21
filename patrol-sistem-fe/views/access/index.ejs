@@ -5,10 +5,10 @@
 </div>
 <div style="display: flex;">
     <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/insert-button', {name:'Akses', linkUrl:'',linkId:'insertAkses',linkClass:''}) %>
+        <%- include('../component/insert-button', {name:'Akses', linkUrl:'',linkId:'insertAkses',linkClass:'btn-insert'}) %>
     </div>
     <div style="margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/edit-button', {name:'Akses', linkUrl:'',linkId:'editAkses',linkClass:''}) %>
+        <%- include('../component/edit-button', {name:'Akses', linkUrl:'',linkId:'editAkses',linkClass:'btn-edit'}) %>
     </div>
 </div>
 <div style="margin-top: 19px;">
@@ -62,7 +62,27 @@
     </div>
 </div>
 
+<!-- Modal Insert Update -->
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-start">
+                    <form id="dataFormContent">
+                        <!-- Form akan dimuat di sini dari js-->
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" id="saveData">Simpan</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let modeSave = 'insert'; // insert atau edit
     let currentPage = 1;
     let rowCount = 10;
     let totalData = 0;
@@ -107,8 +127,8 @@
           <tr>
             <td>
                 <input type="checkbox"/> &nbsp;${index + 1}
-                <input type="hidden" class="roleId" value="${item.role_id}" />
-                <input type="hidden" class="menuId" value="${item.menu_id}" />
+                <input type="hidden" class="role-id" value="${item.role_id}" />
+                <input type="hidden" class="menu-id" value="${item.menu_id}" />
             </td>
             <td>${lastRoleDisplayed}</td>
             <td>${item.menu}</td>
@@ -157,6 +177,33 @@
         html += `</ul></nav>`;
         document.getElementById('pagination').innerHTML = html;
     }
+    function updatePermission(roleId, menuId, permissionIds) {
+            const status = $(`#updatePermission_${permissionIds}`).is(':checked') ? 1 : 0;
+            console.log("Updating permission:", roleId, menuId, permissionIds, status);
+            const jsonData = {
+                permission_id: permissionIds,
+                status: status
+            };
+            console.log(jsonData);
+            $.ajax({
+                url: `<%= API_URL %>/admin/access/${roleId}/${menuId}`,
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                data: JSON.stringify(jsonData),
+                success: function (data) {
+                    loadPatrolData(currentPage, rowCount);
+                    console.log('Akses berhasil diperbarui:', data);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error updating akses:', error);
+                    alert('❌ Gagal memperbarui akses. Silakan coba lagi. ()' + xhr.responseText);
+                }
+            });
+        }
 
 </script>
 <!-- grant access -->
@@ -188,16 +235,25 @@
                 }
             }
         });
+        document.querySelectorAll(".btn-insert").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'insert';
+            openModal("insert");
+        });
+        });
+        document.querySelectorAll(".btn-edit").forEach(btn => {
+            btn.addEventListener("click", function () {
+                modeSave = 'edit';
+                openModal("edit");
+            });
+        });
         loadPatrolData();
-
     });
 
-    document.addEventListener("change", function (e) {
+    document.getElementById('patrol-data').addEventListener("change", function (e) {
         if (e.target.type === "checkbox") {
-
             if (e.target.checked) {
-                // Jika user CHECK → uncheck semua lainnya
-                document.querySelectorAll('#patrol-data input[type=checkbox]').forEach(cb => {
+                this.querySelectorAll('input[type=checkbox]').forEach(cb => {
                     if (cb !== e.target) cb.checked = false;
                 });
             }
@@ -205,23 +261,217 @@
     });
 
 
-    $("#editAkses").click(function () {
-        const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+    function loadRoleOptions(selectedId = null) {
+        return $.ajax({
+            url: `<%= API_URL %>/admin/role`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        }).then(data => {
+            let userSelect = `
+                <select class="form-select" id="roleSelect" name="role_id" required>
+                    <option value="" disabled ${selectedId ? '' : 'selected'}>
+                        Pilih Role
+                    </option>
+            `;
 
-        if (checked.length === 0) {
-            alert('⚠️ Pilih minimal satu data dulu!');
-            return;
-        }
-        // Buat array objek sesuai format { id, dataId }
-        const selectedData = checked.map(cb => {
-            const row = cb.closest('tr');
-            const roleId = row.querySelector('.roleId').value;
-            const menuId = row.querySelector('.menuId').value;
-            return { role_id: roleId, menu_id:menuId };
+            data.data.forEach(menu => {
+                const selected = menu.id == selectedId ? 'selected' : '';
+                userSelect += `
+                    <option value="${menu.id}" ${selected}>
+                        ${menu.name}
+                    </option>
+                `;
+            });
+
+            userSelect += `</select>`;
+            return userSelect;
         });
+    }
+    function loadMenuOptions(selectedId = null) {
+        return $.ajax({
+            url: `<%= API_URL %>/admin/menu`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        }).then(data => {
+            let userSelect = `
+                <select class="form-select" id="menuSelect" name="menu_id" required>
+                    <option value="" disabled ${selectedId ? '' : 'selected'}>
+                        Pilih Menu
+                    </option>
+            `;
 
-        console.log('Data dikirim ke backend:', selectedData);
+            data.data.forEach(menu => {
+                const selected = menu.id == selectedId ? 'selected' : '';
+                userSelect += `
+                    <option value="${menu.id}" ${selected}>
+                        ${menu.name}
+                    </option>
+                `;
+            });
 
-        console.log(checked);
+            userSelect += `</select>`;
+            return userSelect;
+        });
+    }
+
+async function openModal(mode) {
+        // alert("Open Modal");
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+        if (mode === "insert") {
+            modal.show();
+            $("#saveData").show();
+            const roleOptions = await loadRoleOptions();
+            const menuOptions = await loadMenuOptions();
+            document.getElementById("dataFormContent").innerHTML = `
+            <h5>Tambah Akses</h5>
+            <div class="mb-3">
+                <label for="menuName" class="form-label">Role</label>
+                ${roleOptions}
+            </div>
+            <div class="mb-3">
+                <label for="Menu" class="form-label">Menu</label>
+                ${menuOptions}
+            </div>
+            <div class="mb-3">
+                <label for="permissionAccess" class="form-label">Permission</label>
+                <select class="form-select" id="permission_id" name="permission_id" required>
+                    <option value="1">View</option>
+                    <option value="2">Create</option>
+                    <option value="3">Edit</option>
+                    <option value="5">Print</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status" required>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+            </div>
+
+            `;
+        } else if (mode === "edit") {
+            // Ambil data dari checkbox yang dicentang
+            const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+            if (checked.length !== 1) {
+                alert('⚠️ Pilih satu Menu untuk diedit!');
+                modal.hide();
+                return;
+            } else {
+                modal.show();
+                $("#saveData").hide();
+                const row = checked[0].closest('tr');
+                const roleId = row.querySelector('.role-id').value;
+                const menuId = row.querySelector('.menu-id').value;
+                $.ajax({
+                    url: `<%= API_URL %>/admin/access/${roleId}/${menuId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: function (data) {
+                        console.log('Data menu diterima:', data);
+                        let permissionData = [{value: '1', name: 'View'}, {value: '2', name: 'Create'}, {value: '3', name: 'Edit'}, {value: '5', name: 'Print'}];
+                        let checkboxsHtml = '';
+                        if(data.length > 0){
+                            data.forEach(item => {
+                                permissionData = permissionData.map(permission => {
+                                    if (permission.value == item.permission_id && item.status == 1) {
+                                        return {...permission, checked: true};
+                                    }
+                                    return permission;
+                                });
+                            });
+                            permissionData.forEach(permission => {
+                                let isCheck = permission.checked ? 'checked' : '';
+                                checkboxsHtml += `<input type="checkbox" name="permission_ids" id="updatePermission_${permission.value}" onclick="updatePermission('${data[0].role.id}','${data[0].menu.id}','${permission.value}')" value="${permission.value}" ${isCheck}/> ${permission.name} &nbsp;`;
+                            });
+                            document.getElementById("dataFormContent").innerHTML = `
+                            <h5>Edit Akses</h5>
+                            <div class="mb-3">
+                                <label for="menuName" class="form-label">Role</label>
+                                <input type="text" class="form-control" name="id" value="${data[0].role.name}" disabled/>
+                            </div>
+                            <div class="mb-3">
+                                <label for="Menu" class="form-label">Menu</label>
+                                <input type="text" class="form-control" name="id" value="${data[0].menu.name}" disabled/>
+                            </div>
+                            <div class="mb-3">
+                                <label for="permissionAccess" class="form-label">Permission</label>
+                                ${checkboxsHtml}
+                            </div>
+                            `;
+                        }else{
+                            document.getElementById("dataFormContent").innerHTML = `
+                            <h5>Edit Akses</h5>
+                            <div class="mb-3">
+                                <label for="menuName" class="form-label">Data tidak ditemukan</label>
+                            </div>`;
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching menu data:', error);
+                        alert('❌ Gagal mengambil data menu. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
+            }
+        }
+    }
+    $(document).ready(function () {
+        $('#saveData').click(function () {
+            const jsonData = {};
+            $('#dataFormContent').serializeArray().forEach(item => {
+                jsonData[item.name] = item.value;
+            });
+            console.log(jsonData);
+            if (modeSave === 'insert') {
+                // Insert mode
+                $.ajax({
+                    url: '<%= API_URL %>/admin/access',
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Menu berhasil ditambahkan!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error inserting menu:', error);
+                        alert('❌ Gagal menambahkan menu. Silakan coba lagi.');
+                    }
+                });
+            }else if (modeSave === 'edit') {
+                $.ajax({
+                    url: `<%= API_URL %>/admin/access/${jsonData.id}`,
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Menu berhasil diperbarui!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating menu:', error);
+                        alert('❌ Gagal memperbarui menu. Silakan coba lagi. ()' + xhr.responseText);
+                    }
+                });
+            }
+        });
     });
 </script>
