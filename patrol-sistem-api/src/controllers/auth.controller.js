@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
       let permisionData = [];
       let add = false;
       for (let j = 0; j < menupPermission.length; j++) {
-        if (menu[i].id == menupPermission[j].menu_id) {
+        if (menu[i].id == menupPermission[j].menu_id && menupPermission[j].status == 1) {
           permisionData.push(menupPermission[j].permission.action);
           add = true;
         }
