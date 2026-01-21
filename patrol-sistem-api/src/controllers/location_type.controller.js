@@ -1,11 +1,11 @@
-const { Employee, User } = require("../models");
+const { LocationType } = require("../models");
 const { Op } = require("sequelize");
 const checkPermission = require("../utils/checkPermission");
 
 // 🔹 Get all with pagination
 exports.getAll = async (req, res) => {
   try {
-    const menuId = 6; // /admin/Employee
+    const menuId = 14; // /admin/location_type
     const permissionId = [1]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -20,8 +20,7 @@ exports.getAll = async (req, res) => {
     const rowCount = parseInt(req.query.rowCount) || 10;
     const offset = (page - 1) * rowCount;
 
-    const { count, rows } = await Employee.findAndCountAll({
-      include:[{model:User}],
+    const { count, rows } = await LocationType.findAndCountAll({
       limit: rowCount,
       offset,
     });
@@ -36,7 +35,7 @@ exports.getAll = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Terjadi Kesalahan Saat Menampilkan Data Employee!",
+      message: "Terjadi Kesalahan Saat Menampilkan Data Location Type!",
       data: err.message,
     });
   }
@@ -45,7 +44,7 @@ exports.getAll = async (req, res) => {
 // 🔹 Get by ID
 exports.getById = async (req, res) => {
   try {
-    const menuId = 6; // /admin/Employee
+    const menuId = 14; // /admin/location_type
     const permissionId = [1]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -56,7 +55,7 @@ exports.getById = async (req, res) => {
       });
     }
 
-    const data = await Employee.findByPk(req.params.id);
+    const data = await LocationType.findByPk(req.params.id);
     if (!data)
       return res.status(404).json({ message: "Data Tidak Ditemukan!" });
     res.json(data);
@@ -68,7 +67,7 @@ exports.getById = async (req, res) => {
 // 🔹 Create
 exports.create = async (req, res) => {
   try {
-    const menuId = 6; // /admin/Employee
+    const menuId = 14; // /admin/location_type
     const permissionId = [2]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -79,30 +78,16 @@ exports.create = async (req, res) => {
       });
     }
 
-    if (req.body.user_id != null) {
-      const existingEmployee = await Employee.findOne({
-        where: { user_id: req.body.user_id },
-      });
-
-      if (existingEmployee) {
-        return res.status(409).json({
-          status: "Error",
-          message: "User ini sudah digunakan oleh Employee lain.",
-        });
-      }
-    }
-
-
-    const data = await Employee.create(req.body);
+    const data = await LocationType.create(req.body);
     res.status(201).json({
       status: "Success",
-      message: "Employee berhasil ditambahkan!",
+      message: "Location Type berhasil ditambahkan!",
       data,
     });
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Gagal menambahkan Employee.",
+      message: "Gagal menambahkan Location Type.",
       data: err.message,
     });
   }
@@ -111,7 +96,7 @@ exports.create = async (req, res) => {
 // 🔹 Update
 exports.update = async (req, res) => {
   try {
-    const menuId = 6; // /admin/Employee
+    const menuId = 14; // /admin/location_type
     const permissionId = [3]; // 1 view 2 create, 3 edit, 4 delete, 5 print
     // validasi akses
     const allowed = await checkPermission(menuId, permissionId, req.user);
@@ -122,37 +107,20 @@ exports.update = async (req, res) => {
       });
     }
 
-    if (req.body.user_id != null) {
-      const existingEmployee = await Employee.findOne({
-        where: {
-          user_id: req.body.user_id,
-          id: { [Op.ne]: req.params.id },
-        },
-      });
-
-
-      if (existingEmployee) {
-        return res.status(409).json({
-          status: "Error",
-          message: "User ini sudah digunakan oleh Employee lain.",
-        });
-      }
-    }
-
-    const data = await Employee.findByPk(req.params.id);
+    const data = await LocationType.findByPk(req.params.id);
     if (!data)
       return res.status(404).json({ message: "Data Tidak Ditemukan!" });
 
     await data.update(req.body);
     res.json({
       status: "Success",
-      message: "Employee berhasil diperbaharui!",
+      message: "Location Type berhasil diperbaharui!",
       data,
     });
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Gagal memperbaharui Employee.",
+      message: "Gagal memperbaharui Location Type.",
       data: err.message,
     });
   }
@@ -161,14 +129,14 @@ exports.update = async (req, res) => {
 // 🔹 Delete
 exports.delete = async (req, res) => {
   try {
-    const data = await Employee.findByPk(req.params.id);
+    const data = await LocationType.findByPk(req.params.id);
     if (!data)
       return res.status(404).json({ message: "Data Tidak Ditemukan!" });
 
     await data.destroy();
     res.json({
       status: "Success",
-      message: "Employee berhasil dihapus!",
+      message: "Location Type berhasil dihapus!",
     });
   } catch (err) {
     res.status(500).json({

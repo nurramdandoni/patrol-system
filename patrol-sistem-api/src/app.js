@@ -160,6 +160,7 @@ app.get('/', (req, res) => res.send('RBAC Service Running'));
 
 const authRoutes = require('./routes/auth.routes');
 const patrolRoutes = require('./routes/patrol.routes')
+const locationTypeRoutes = require('./routes/location_type.routes');
 const locationRoutes = require('./routes/location.routes');
 const patrolActivityRoutes = require('./routes/patrol_activity.routes');
 const employeeRoutes = require('./routes/employee.routes');
@@ -173,6 +174,7 @@ const scheduleRoutes = require('./routes/schedule.routes');
 // const dashboardRoutes = require('./routes/dashboard.routes');
 
 app.use('/auth', authRoutes);
+app.use('/admin', locationTypeRoutes);
 app.use('/admin', locationRoutes);
 app.use('/admin', employeeRoutes);
 app.use('/admin', userRoutes);
