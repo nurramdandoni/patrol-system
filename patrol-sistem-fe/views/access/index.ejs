@@ -126,7 +126,7 @@
                 tableBody += `
           <tr>
             <td>
-                <input type="checkbox"/> &nbsp;${index + 1}
+                <input type="checkbox"/> &nbsp;${index + 1+(currentPage - 1) * rowCount}
                 <input type="hidden" class="role-id" value="${item.role_id}" />
                 <input type="hidden" class="menu-id" value="${item.menu_id}" />
             </td>

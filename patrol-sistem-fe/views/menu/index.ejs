@@ -117,7 +117,7 @@
           <tr>
             <td>
                 <input type="hidden" class="menu-id" value="${item.id}" />
-                <input type="checkbox"/> &nbsp;${index + 1}
+                <input type="checkbox"/> &nbsp;${index + 1+(currentPage - 1) * rowCount}
                 <input type="hidden" class="dataId" value="${item.id}" />
             </td>
             <td>${item.name}</td>

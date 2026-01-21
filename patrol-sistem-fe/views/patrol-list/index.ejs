@@ -152,7 +152,7 @@
                 window.patrolActivityStore[item.id] = item.patrol_activity;
                 tableBody += `
           <tr>
-            <td>${index + 1}</td>
+            <td>${index + 1+(currentPage - 1) * rowCount}</td>
             <td>${item.name}</td>
             <td>
               ${item.patrol_activity.length > 0
