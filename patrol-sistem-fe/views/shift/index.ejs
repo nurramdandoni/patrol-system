@@ -5,10 +5,10 @@
 </div>
 <div style="display: flex;">
     <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/insert-button', {name:'Shift', linkUrl:'',linkId:'insertShift',linkClass:''}) %>
+        <%- include('../component/insert-button', {name:'Shift', linkUrl:'',linkId:'insertShift',linkClass:'btn-insert'}) %>
     </div>
     <div style="margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/edit-button', {name:'Shift', linkUrl:'',linkId:'editShift',linkClass:''}) %>
+        <%- include('../component/edit-button', {name:'Shift', linkUrl:'',linkId:'editShift',linkClass:'btn-edit'}) %>
     </div>
 </div>
 <div style="margin-top: 19px;">
@@ -29,9 +29,9 @@
                     <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
                         Shift</th>
                     <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        Order Index</th>
+                        Jam Kerja</th>
                     <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        Dibuat</th>
+                        Status</th>
                 </tr>
             </thead>
 
@@ -62,7 +62,27 @@
   </div>
 </div>
 
+<!-- Modal Insert Update -->
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-start">
+                    <form id="dataFormContent">
+                        <!-- Form akan dimuat di sini dari js-->
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" id="saveData">Simpan</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    let modeSave = 'insert'; // insert atau edit
     let currentPage = 1;
     let rowCount = 10;
     let totalData = 0;
@@ -96,12 +116,13 @@
                 tableBody += `
           <tr>
             <td>
+                <input type="hidden" class="shift-id" value="${item.id}" />
                 <input type="checkbox"/> &nbsp;${index + 1}
                 <input type="hidden" class="dataId" value="${item.id}" />
             </td>
             <td>${item.name}</td>
-            <td>${item.index}</td>
-            <td>${item.createdAt}</td>
+            <td>${item.start_time} WIB - ${item.end_time} WIB</td>
+            <td>${item.status == 1 ? "Active" : "Inactive"}</td>
           </tr>
         `;
             });
@@ -176,6 +197,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+    document.querySelectorAll(".btn-insert").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'insert';
+            openModal("insert");
+        });
+    });
+    document.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'edit';
+            openModal("edit");
+        });
+    });
     loadPatrolData();
     
 });
@@ -193,22 +226,133 @@ document.addEventListener("change", function(e) {
 });
 
 
-$("#editShift").click(function(){
-    const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
-
-        if (checked.length === 0) {
-            alert('⚠️ Pilih minimal satu data dulu!');
-            return;
+function openModal(mode) {
+        // alert("Open Modal");
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+        if (mode === "insert") {
+            modal.show();
+            document.getElementById("dataFormContent").innerHTML = `
+            <h5>Tambah Shift Baru</h5>
+            <div class="mb-3">
+                <label for="roleName" class="form-label">Nama Shift</label>
+                <input type="text" class="form-control" id="roleName" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="startTime" class="form-label">Mulai Jam Kerja</label>
+                <input type="time" class="form-control" id="startTime" name="start_time" required>
+            </div>
+            <div class="mb-3">
+                <label for="endTime" class="form-label">Akhir Jam Kerja</label>
+                <input type="time" class="form-control" id="endTime" name="end_time" required>
+            </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status" required>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+            </div>
+            `;
+        } else if (mode === "edit") {
+            // Ambil data dari checkbox yang dicentang
+            const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+            if (checked.length !== 1) {
+                alert('⚠️ Pilih satu lokasi untuk diedit!');
+                modal.hide();
+                return;
+            } else {
+                modal.show();
+                const row = checked[0].closest('tr');
+                const shiftId = row.querySelector('.shift-id').value;
+                $.ajax({
+                    url: `<%= API_URL %>/admin/shift/${shiftId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: function (data) {
+                        console.log('Data shift diterima:', data);
+                        document.getElementById("dataFormContent").innerHTML = `
+                        <h5>Edit Shift</h5>
+                        <div class="mb-3">
+                            <input type="hidden" name="id" id="shiftId" value="${data.id}" />
+                            <label for="shiftName" class="form-label">Nama Shift</label>
+                            <input type="text" class="form-control" id="shiftName" name="name" value="${data.name}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="startTime" class="form-label">Mulai Jam Kerja</label>
+                            <input type="time" class="form-control" id="startTime" name="start_time" value="${data.start_time}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="endTime" class="form-label">Akhir Jam Kerja</label>
+                            <input type="time" class="form-control" id="endTime" name="end_time" value="${data.end_time}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value=1 ${data.status == 1 ? "selected": ""}>Active</option>
+                                <option value=0 ${data.status == 0 ? "selected": ""}>Inactive</option>
+                            </select>
+                        </div>
+                        `;
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching shift data:', error);
+                        alert('❌ Gagal mengambil data shift. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
+            }
         }
-        // Buat array objek sesuai format { id, dataId }
-        const selectedData = checked.map(cb => {
-            const row = cb.closest('tr');
-            const dataId = row.querySelector('.dataId').value;
-            return { id: dataId };
+    }
+    $(document).ready(function () {
+        $('#saveData').click(function () {
+            const jsonData = {};
+            $('#dataFormContent').serializeArray().forEach(item => {
+                jsonData[item.name] = item.value;
+            });
+            console.log(jsonData);
+            if (modeSave === 'insert') {
+                // Insert mode
+                $.ajax({
+                    url: '<%= API_URL %>/admin/shift',
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Shift berhasil ditambahkan!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error inserting shift:', error);
+                        alert('❌ Gagal menambahkan shift. Silakan coba lagi.');
+                    }
+                });
+            }else if (modeSave === 'edit') {
+                $.ajax({
+                    url: `<%= API_URL %>/admin/shift/${jsonData.id}`,
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Shift berhasil diperbarui!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating shift:', error);
+                        alert('❌ Gagal memperbarui shift. Silakan coba lagi.');
+                    }
+                });
+            }
         });
-
-        console.log('Data dikirim ke backend:', selectedData);
-
-        console.log(checked);
-});
+    });
 </script>
