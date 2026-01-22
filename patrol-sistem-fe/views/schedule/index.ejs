@@ -5,10 +5,10 @@
 </div>
 <div style="display: flex;">
     <div style="margin-left: auto;margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/insert-button', {name:'Jadwal', linkUrl:'',linkId:'insertJadwal',linkClass:''}) %>
+        <%- include('../component/insert-button', {name:'Jadwal', linkUrl:'',linkId:'insertJadwal',linkClass:'btn-insert'}) %>
     </div>
     <div style="margin-right: 8px; margin-top: 12px;">
-        <%- include('../component/edit-button', {name:'Jadwal', linkUrl:'',linkId:'editJadwal',linkClass:''}) %>
+        <%- include('../component/edit-button', {name:'Jadwal', linkUrl:'',linkId:'editJadwal',linkClass:'btn-edit'}) %>
     </div>
 </div>
 <div style="margin-top: 19px;">
@@ -34,6 +34,8 @@
                         Lokasi Type</th>
                     <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
                         Petugas Patroli</th>
+                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
+                        Status</th>
                 </tr>
             </thead>
 
@@ -44,12 +46,12 @@
                     <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
                     <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
                     <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
+                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
                 </tr>
             </tbody>
         </table>
     </div>
 </div>
-<div id="pagination" class="d-flex justify-content-center mt-3"></div>
 
 <!-- Modal Preview Gambar -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
@@ -65,14 +67,31 @@
   </div>
 </div>
 
+<!-- Modal Insert Update -->
+<div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-body">
+                <div class="text-start">
+                    <form id="dataFormContent">
+                        <!-- Form akan dimuat di sini dari js-->
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-success" id="saveData">Simpan</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    let currentPage = 1;
-    let rowCount = 10;
-    let totalData = 0;
+    let modeSave = 'insert'; // insert atau edit
     function loadPatrolData(page, rowCount) {
         currentPage = page || 1;
         rowCount = rowCount || 10;
-        fetch(`<%= API_URL %>/admin/schedule?page=${page}&rowCount=${rowCount}`, {
+        fetch(`<%= API_URL %>/admin/schedule/where`, {
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -99,54 +118,26 @@
                 tableBody += `
           <tr>
             <td>
+                <input type="hidden" class="schedule-id" value="${item.id}" />
+                <input type="hidden" class="schedule-date" value="${item.schedule_date}" />
+                <input type="hidden" class="shift-id" value="${item.shift_id}" />
+                <input type="hidden" class="location-type-id" value="${item.location_type_id}" />
+                <input type="hidden" class="checker-id" value="${item.checker_id}" />
+                <input type="hidden" class="status-id" value="${item.status}" />
                 <input type="checkbox"/> &nbsp;${index + 1}
                 <input type="hidden" class="dataId" value="${item.id}" />
             </td>
-            <td>${item.name}</td>
-            <td>${item.index}</td>
-            <td>${item.createdAt}</td>
+            <td>${item.schedule_date}</td>
+            <td>${item.shift.name}</td>
+            <td>${item.location_type.name}</td>
+            <td>${item.user.employee.full_name}</td>
+            <td>${item.status == 1 ? 'Active' : 'Inactive'}</td>
           </tr>
         `;
             });
             // console.log(tableBody);
             document.getElementById('patrol-data').innerHTML = tableBody;
-            renderPagination(data.totalData, rowCount);
         })
-    }
-    function renderPagination(totalData, rowCount) {
-        const totalPages = Math.ceil(totalData / rowCount);
-        let html = `<nav><ul class="pagination">`;
-
-        // Prev
-        html += `
-        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-        <button class="page-link" onclick="loadPatrolData(${currentPage - 1})">
-            &laquo;
-        </button>
-        </li>`;
-
-        // Number
-        for (let i = 1; i <= totalPages; i++) {
-            if (i >= currentPage - 2 && i <= currentPage + 2) {
-                html += `
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                <button class="page-link" onclick="loadPatrolData(${i}, ${rowCount})">
-                    ${i}
-                </button>
-                </li>`;
-            }
-        }
-
-        // Next
-        html += `
-        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-        <button class="page-link" onclick="loadPatrolData(${currentPage + 1})">
-            &raquo;
-        </button>
-        </li>`;
-
-        html += `</ul></nav>`;
-        document.getElementById('pagination').innerHTML = html;
     }
 
 </script>
@@ -179,6 +170,18 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+    document.querySelectorAll(".btn-insert").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'insert';
+            openModal("insert");
+        });
+        });
+    document.querySelectorAll(".btn-edit").forEach(btn => {
+        btn.addEventListener("click", function () {
+            modeSave = 'edit';
+            openModal("edit");
+        });
+    });
     loadPatrolData();
     
 });
@@ -196,22 +199,253 @@ document.addEventListener("change", function(e) {
 });
 
 
-$("#editJadwal").click(function(){
-    const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
 
-        if (checked.length === 0) {
-            alert('⚠️ Pilih minimal satu data dulu!');
-            return;
-        }
-        // Buat array objek sesuai format { id, dataId }
-        const selectedData = checked.map(cb => {
-            const row = cb.closest('tr');
-            const dataId = row.querySelector('.dataId').value;
-            return { id: dataId };
+function loadShiftOptions(selectedId = null) {
+        return $.ajax({
+            url: `<%= API_URL %>/admin/shift`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        }).then(data => {
+            let shiftSelect = `
+                <select class="form-select" id="shiftSelect" name="shift_id" required>
+                    <option value="" disabled ${selectedId ? '' : 'selected'}>
+                        Pilih Shift
+                    </option>
+            `;
+
+            data.data.forEach(shift => {
+                const selected = shift.id == selectedId ? 'selected' : '';
+                shiftSelect += `
+                    <option value="${shift.id}" ${selected}>
+                        ${shift.name}
+                    </option>
+                `;
+            });
+
+            shiftSelect += `</select>`;
+            return shiftSelect;
         });
+    }
+    function loadLocationTypeOptions(selectedId = null) {
+        return $.ajax({
+            url: `<%= API_URL %>/admin/location/type`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        }).then(data => {
+            let locationTypeSelect = `
+                <select class="form-select" id="locationTypeId" name="location_type_id" required>
+                    <option value="" disabled ${selectedId ? '' : 'selected'}>
+                        Pilih Location Type
+                    </option>
+            `;
 
-        console.log('Data dikirim ke backend:', selectedData);
+            data.data.forEach(locationType => {
+                const selected = locationType.id == selectedId ? 'selected' : '';
+                locationTypeSelect += `
+                    <option value="${locationType.id}" ${selected}>
+                        ${locationType.name}
+                    </option>
+                `;
+            });
 
-        console.log(checked);
-});
+            locationTypeSelect += `</select>`;
+            return locationTypeSelect;
+        });
+    }
+    function petugasOptions(selectedId = null) {
+        return $.ajax({
+            url: `<%= API_URL %>/admin/employee?page=1&rowCount=1000`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        }).then(data => {
+            let locationTypeSelect = `
+                <select class="form-select" id="user" name="checker_id" required>
+                    <option value="" disabled ${selectedId ? '' : 'selected'}>
+                        Pilih Petugas
+                    </option>
+            `;
+
+            data.data.forEach(employee => {
+                if(employee.user_id != null){
+                    if(employee.user.role_id == 6){
+                        const selected = employee.id == selectedId ? 'selected' : '';
+                        locationTypeSelect += `
+                            <option value="${employee.user.id}" ${selected}>
+                                ${employee.full_name}
+                            </option>
+                        `;
+                    }
+                }
+            });
+
+            locationTypeSelect += `</select>`;
+            return locationTypeSelect;
+        });
+    }
+
+async function openModal(mode) {
+        // alert("Open Modal");
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+        if (mode === "insert") {
+            modal.show();
+            $("#saveData").show();
+            const shiftOptions = await loadShiftOptions();
+            const locationTypeOptions = await loadLocationTypeOptions();
+            const petugasOptionsData = await petugasOptions();
+            document.getElementById("dataFormContent").innerHTML = `
+            <h5>Tambah Akses</h5>
+            <div class="mb-3">
+                <label for="tanggal" class="form-label">Tanggal</label>
+                <input type="date" class="form-control" id="schedule_date" name="schedule_date" required>
+            </div>
+            <div class="mb-3">
+                <label for="shiftName" class="form-label">Shift</label>
+                ${shiftOptions}
+            </div>
+            <div class="mb-3">
+                <label for="locationType" class="form-label">Location Type</label>
+                ${locationTypeOptions}
+            </div>
+            <div class="mb-3">
+                <label for="petugas" class="form-label">Petugas</label>
+                ${petugasOptionsData}
+            </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status" required>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+            </div>
+            `;
+        } else if (mode === "edit") {
+            // Ambil data dari checkbox yang dicentang
+            const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
+            if (checked.length !== 1) {
+                alert('⚠️ Pilih satu Menu untuk diedit!');
+                modal.hide();
+                return;
+            } else {
+                modal.show();
+                $("#saveData").show();
+                const row = checked[0].closest('tr');
+                const scheduleDate = row.querySelector('.schedule-date').value;
+                const shiftId = row.querySelector('.shift-id').value;
+                const locationTypeId = row.querySelector('.location-type-id').value;
+                const checkerId = row.querySelector('.checker-id').value;
+                const statusId = row.querySelector('.status-id').value;
+                $.ajax({
+                    url: `<%= API_URL %>/admin/schedule/query/${scheduleDate}/${shiftId}/${locationTypeId}/${checkerId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: async function (data) {
+                        console.log('Data menu diterima:', data.data[0]);
+                        let shiftOptions, locationTypeOptions,petugasOptionsData;
+                        if(data.data.length > 0){
+                            shiftOptions = await loadShiftOptions(data.data[0].shift_id);
+                            locationTypeOptions = await loadLocationTypeOptions(data.data[0].location_type_id);
+                            petugasOptionsData = await petugasOptions(data.data[0].user.employee.id);
+
+                        }else{
+                            shiftOptions = await loadShiftOptions();
+                            locationTypeOptions = await loadLocationTypeOptions();
+                            petugasOptionsData = await petugasOptions();
+                        }
+                            document.getElementById("dataFormContent").innerHTML = `
+                            <h5>Edit Akses</h5>
+                            <div class="mb-3">
+                                <label for="tanggal" class="form-label">Tanggal</label>
+                                <input type="date" class="form-control" id="schedule_date" name="schedule_date" value="${data.data[0].schedule_date}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="shiftName" class="form-label">Shift</label>
+                                ${shiftOptions}
+                            </div>
+                            <div class="mb-3">
+                                <label for="locationType" class="form-label">Location Type</label>
+                                ${locationTypeOptions}
+                            </div>
+                            <div class="mb-3">
+                                <label for="petugas" class="form-label">Petugas</label>
+                                ${petugasOptionsData}
+                            </div>
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
+                            `;
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching menu data:', error);
+                        alert('❌ Gagal mengambil data menu. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
+            }
+        }
+    }
+    $(document).ready(function () {
+        $('#saveData').click(function () {
+            const jsonData = {};
+            $('#dataFormContent').serializeArray().forEach(item => {
+                jsonData[item.name] = item.value;
+            });
+            console.log(jsonData);
+            if (modeSave === 'insert') {
+                // Insert mode
+                $.ajax({
+                    url: '<%= API_URL %>/admin/schedule',
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Menu berhasil ditambahkan!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error inserting menu:', error);
+                        alert('❌ Gagal menambahkan menu. Silakan coba lagi.');
+                    }
+                });
+            }else if (modeSave === 'edit') {
+                $.ajax({
+                    url: `<%= API_URL %>/admin/schedule/${jsonData.schedule_date}/${jsonData.shift_id}/${jsonData.location_type_id}/${jsonData.checker_id}`,
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    data: JSON.stringify(jsonData),
+                    success: function (data) {
+                        alert('✅ Menu berhasil diperbarui!');
+                        location.reload();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error updating menu:', error);
+                        alert('❌ Gagal memperbarui menu. Silakan coba lagi. ()' + xhr.responseText);
+                    }
+                });
+            }
+        });
+    });
 </script>
