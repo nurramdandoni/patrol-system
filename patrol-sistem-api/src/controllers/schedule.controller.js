@@ -1,4 +1,4 @@
-const { Schedule } = require("../models");
+const { Schedule, Shift, LocationType, User, Employee } = require("../models");
 const { Op, where } = require("sequelize");
 const checkPermission = require("../utils/checkPermission");
 
@@ -70,6 +70,16 @@ exports.getAllWhere = async (req, res) => {
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
     const { count, rows } = await Schedule.findAndCountAll({
+        include:[
+          {model:Shift},
+          {model:LocationType},
+          {model:User,
+            include:[
+              {model:Employee}
+            ]
+
+          }
+        ],
         where: {
             schedule_date: {
                 [Op.between]: [startDate, endDate]
@@ -112,6 +122,48 @@ exports.getById = async (req, res) => {
     if (!data)
       return res.status(404).json({ message: "Data Tidak Ditemukan!" });
     res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+// 🔹 Get by multiple query param
+exports.getByQueryParam = async (req, res) => {
+  try {
+    const menuId = 13; // /admin/schedule
+    const permissionId = [1]; // 1 view 2 create, 3 edit, 4 delete, 5 print
+    // validasi akses
+    const allowed = await checkPermission(menuId, permissionId, req.user);
+    if (!allowed) {
+      return res.status(401).json({
+        status: "Access",
+        message: "Access Not Allowed",
+      });
+    }
+
+    const { scheduleDate, shiftId, locationTypeId, checkerId } = req.params;
+    const { count, rows } = await Schedule.findAndCountAll({
+        include:[
+          {model:User,
+            include:[
+              {model:Employee}
+            ]
+          }
+        ],
+        where: {
+            schedule_date: scheduleDate,
+            shift_id: shiftId,
+            location_type_id: locationTypeId,
+            checker_id: checkerId
+        }
+    });
+
+    res.json({
+      statusCode: 200,
+      status: "Success",
+      message: "Data Berhasil Ditemukan!",
+      totalData: count,
+      data: rows,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -160,20 +212,62 @@ exports.update = async (req, res) => {
       });
     }
 
-    const data = await Schedule.findByPk(req.params.id);
-    if (!data)
-      return res.status(404).json({ message: "Data Tidak Ditemukan!" });
+    const { scheduleDate, shiftId, locationTypeId, checkerId } = req.params;
+    const { schedule_date, shift_id, location_type_id, checker_id, status } = req.body;
 
-    await data.update(req.body);
+    const oldKey = {
+      schedule_date: scheduleDate,
+      shift_id: shiftId,
+      location_type_id: locationTypeId,
+      checker_id: checkerId
+    };
+
+    const newData = {
+      schedule_date: schedule_date, // dari body
+      shift_id,
+      location_type_id,
+      checker_id,
+      status
+    };
+
+    // cek apakah data lama ada
+    const existing = await Schedule.findOne({ where: oldKey });
+
+    // 🔴 cek konflik data baru
+    const conflict = await Schedule.findOne({
+      where: {
+        ...newData,
+        schedule_date: schedule_date
+      }
+    });
+
+    if (conflict && (!existing || conflict.id !== existing.id)) {
+      return res.status(409).json({
+        message: "Jadwal dengan kombinasi ini sudah ada"
+      });
+    }
+
+    let data;
+
+    if (existing) {
+      await existing.update(newData);
+      data = existing;
+    } else {
+      data = await Schedule.create(newData);
+    }
+
     res.json({
       status: "Success",
-      message: "Schedule berhasil diperbaharui!",
-      data,
+      message: existing
+        ? "Jadwal berhasil dipindahkan / diperbarui"
+        : "Jadwal berhasil ditambahkan",
+      data
     });
+
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Gagal memperbaharui Schedule.",
+      message: "Gagal memperbaharui Jadwal.",
       data: err.message,
     });
   }
