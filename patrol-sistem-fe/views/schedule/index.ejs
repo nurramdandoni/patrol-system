@@ -1,3 +1,27 @@
+<style>
+  .schedule-table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .schedule-table th,
+  .schedule-table td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    text-align: center;
+  }
+
+  /* hover satu baris */
+  .schedule-table tbody tr:hover {
+    background-color: #f0f8ff;
+  }
+
+  /* biar checkbox gak geser */
+  .schedule-table input[type="checkbox"] {
+    cursor: pointer;
+  }
+</style>
+
 <div style="display: flex;">
     <span style="font-size:20px;font-weight:600;">
         <%= title %>
@@ -11,45 +35,17 @@
         <%- include('../component/edit-button', {name:'Jadwal', linkUrl:'',linkId:'editJadwal',linkClass:'btn-edit'}) %>
     </div>
 </div>
+<div style="display: flex;">
+    <div style="margin-left: auto; margin-right: 8px; margin-top: 12px;">
+        <input type="month" id="monthPicker" value="2026-01">
+        <button style="width:164px;background-color: rgb(100, 100, 2);color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;padding: 5px;" onclick="loadPatrolData()"><i class="fa fa-search"></i>&nbsp; Tampilkan</button>
+    </div>
+</div>
 <div style="margin-top: 19px;">
     <div class="table-container" style="overflow: auto; max-height: 500px; padding: 5px;">
-        <table style="
-            width: 100%;
-            border-collapse: collapse;
-            font-family: Arial, sans-serif;
-            border: 1px solid #d0d7de;
-            border-radius: 8px;
-            overflow: hidden;
-            font-family: 'Poppins', sans-serif;">
-            <thead>
-                <tr style="background: #f0f7ff; border-bottom: 2px solid #c5d9f5;">
-                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        #
-                    </th>
-                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        Tanggal</th>
-                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        Shift</th>
-                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        Lokasi Type</th>
-                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        Petugas Patroli</th>
-                    <th style="padding: 10px; text-align: left; font-weight: 600; border-right: 1px solid #e1e4e8;">
-                        Status</th>
-                </tr>
-            </thead>
 
-            <tbody id="patrol-data">
-                <tr style="border-bottom: 1px solid #e1e4e8; transition: 0.2s;"
-                    onmouseover="this.style.background='#f9fbff'" onmouseout="this.style.background='white'">
-                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
-                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
-                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
-                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
-                    <td style="padding: 10px; border-right: 1px solid #f0f0f0;">-</td>
-                </tr>
-            </tbody>
-        </table>
+        <div id="scheduleContainer" style="width: 500px; font-size: xx-small;"></div>
+
     </div>
 </div>
 
@@ -87,57 +83,75 @@
 </div>
 
 <script>
+    const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     let modeSave = 'insert'; // insert atau edit
-    function loadPatrolData(page, rowCount) {
-        currentPage = page || 1;
-        rowCount = rowCount || 10;
-        fetch(`<%= API_URL %>/admin/schedule/where`, {
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                'ngrok-skip-browser-warning': 'true'
+
+    async function loadPatrolData(page, rowCount) {
+
+        let tableBody = '';
+            const monthValue = document.getElementById('monthPicker').value;
+            if (!monthValue) return;
+
+            const [year, month] = monthValue.split('-').map(Number);
+            const daysInMonth = new Date(year, month, 0).getDate();
+
+            // contoh data pegawai
+            const employees = await petugasList();
+            const schedules = await scheduleList();
+            console.log("schedule ", schedules);
+
+            let table = `
+                <table class="schedule-table">
+                <thead>
+                    <tr>
+                    <th rowspan="2">No</th>
+                    <th rowspan="2">Nama</th>
+                    <th colspan="${daysInMonth}" style="text-align: center;">Tanggal</th>
+                    </tr>
+                    <tr>
+            `;
+
+            // baris tanggal + hari
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayIndex = new Date(year, month - 1, d).getDay();
+                table += `<th style="text-align: center;">${d}<br>${DAY_NAMES[dayIndex]}</th>`;
             }
-        })
-        .then(async (response) => {
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', errorText);
-                if (response.status === 401) {
-                    alert('❌ ' + errorText + ' On Jadwal Employee');
-                    // Redirect ke halaman login
-                    window.location.href = '/';
-                } else {
-                    alert('⚠️ Terjadi kesalahan server (' + response.status + ')');
+
+            table += `</tr></thead><tbody id="patrol-data">`;
+
+            employees.forEach((emp, index) => {
+                console.log("Employee: ", emp);
+                table += `
+                <tr style="hover: background-color: #f0f0f0;">
+                    <td>${index + 1}</td>
+                    <td>${emp.full_name}</td>
+                `;
+
+                for (let d = 1; d <= daysInMonth; d++) {
+
+                    let bgColor = 'style="background-color: red;"';
+                    let labelInfo = '';
+                    const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    if (schedules[dateKey] && schedules[dateKey][emp.user_id] && schedules[dateKey][emp.user_id].length > 0) {
+                        bgColor = 'style="background-color: white;"';
+                        schedules[dateKey] && schedules[dateKey][emp.user_id].forEach(sch => {
+                            let shiftName = sch.shift.name.split(' - ')[1];
+                            let locationTypeName = sch.location_type.name.split(' - ')[1];
+                            labelInfo += `<input class="schedule-checkbox" type="checkbox" value="${dateKey}|${sch.shift_id}|${sch.location_type_id}|${sch.checker_id}|${sch.status}"/>${shiftName}.${locationTypeName}`;
+                        });
+                    }
+                    table += `<td ${bgColor}>
+                        ${labelInfo}
+                        <button style="background-color: #2cbae8;color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;" onclick="easyInputScehdule('${dateKey}|1|1|${emp.employe_id}|1')">O</button>
+                     </td>`;
                 }
-                throw new Error('HTTP error ' + response.status);
-            }
-            let tableBody = '';
-            const data = await response.json();
-            console.log(data);
-            data.data.forEach((item, index) => {
-                tableBody += `
-          <tr>
-            <td>
-                <input type="hidden" class="schedule-id" value="${item.id}" />
-                <input type="hidden" class="schedule-date" value="${item.schedule_date}" />
-                <input type="hidden" class="shift-id" value="${item.shift_id}" />
-                <input type="hidden" class="location-type-id" value="${item.location_type_id}" />
-                <input type="hidden" class="checker-id" value="${item.checker_id}" />
-                <input type="hidden" class="status-id" value="${item.status}" />
-                <input type="checkbox"/> &nbsp;${index + 1}
-                <input type="hidden" class="dataId" value="${item.id}" />
-            </td>
-            <td>${item.schedule_date}</td>
-            <td>${item.shift.name}</td>
-            <td>${item.location_type.name}</td>
-            <td>${item.user.employee.full_name}</td>
-            <td>${item.status == 1 ? 'Active' : 'Inactive'}</td>
-          </tr>
-        `;
+
+                table += `</tr>`;
             });
-            // console.log(tableBody);
-            document.getElementById('patrol-data').innerHTML = tableBody;
-        })
+
+            table += `</tbody></table>`;
+
+            document.getElementById('scheduleContainer').innerHTML = table;
     }
 
 </script>
@@ -267,6 +281,8 @@ function loadShiftOptions(selectedId = null) {
                 'ngrok-skip-browser-warning': 'true'
             }
         }).then(data => {
+            console.log("selectedId:", selectedId);
+            console.log("Petugas data:", data);
             let locationTypeSelect = `
                 <select class="form-select" id="user" name="checker_id" required>
                     <option value="" disabled ${selectedId ? '' : 'selected'}>
@@ -289,6 +305,56 @@ function loadShiftOptions(selectedId = null) {
 
             locationTypeSelect += `</select>`;
             return locationTypeSelect;
+        });
+    }
+
+    function petugasList() {
+        return $.ajax({
+            url: `<%= API_URL %>/admin/employee?page=1&rowCount=1000`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        }).then(data => {
+            let petugasList = [];
+
+            data.data.forEach(employee => {
+                if(employee.user_id != null){
+                    if(employee.user.role_id == 6){
+                        petugasList.push({
+                            employe_id: employee.id,
+                            user_id: employee.user.id,
+                            full_name: employee.full_name
+                        });
+                    }
+                }
+            });
+
+            return petugasList;
+        });
+    }
+    function scheduleList(){
+        return $.ajax({
+            url: `<%= API_URL %>/admin/schedule/where`,
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                'ngrok-skip-browser-warning': 'true'
+            }
+        }).then(data => {
+            const scheduleMap = {};
+
+            data.data.forEach(s => {
+                scheduleMap[s.schedule_date] ??= {};
+                scheduleMap[s.schedule_date][s.checker_id] ??= [];
+                if(s.status == 1){
+                    scheduleMap[s.schedule_date][s.checker_id].push(s);
+                }
+            });
+
+
+            return scheduleMap;
         });
     }
 
@@ -331,18 +397,15 @@ async function openModal(mode) {
             // Ambil data dari checkbox yang dicentang
             const checked = Array.from(document.querySelectorAll('#patrol-data input[type=checkbox]:checked'));
             if (checked.length !== 1) {
-                alert('⚠️ Pilih satu Menu untuk diedit!');
+                alert('⚠️ Pilih satu Jadwal untuk diedit!');
                 modal.hide();
                 return;
             } else {
                 modal.show();
                 $("#saveData").show();
-                const row = checked[0].closest('tr');
-                const scheduleDate = row.querySelector('.schedule-date').value;
-                const shiftId = row.querySelector('.shift-id').value;
-                const locationTypeId = row.querySelector('.location-type-id').value;
-                const checkerId = row.querySelector('.checker-id').value;
-                const statusId = row.querySelector('.status-id').value;
+                const scheduleCheckboxValue = checked[0].value;
+                const [scheduleDate, shiftId, locationTypeId, checkerId, statusId] = scheduleCheckboxValue.split('|');
+                console.log("Checked value: ", scheduleCheckboxValue);
                 $.ajax({
                     url: `<%= API_URL %>/admin/schedule/query/${scheduleDate}/${shiftId}/${locationTypeId}/${checkerId}`,
                     method: 'GET',
@@ -448,4 +511,60 @@ async function openModal(mode) {
             }
         });
     });
+
+    function easyInputScehdule(scheduleCheckboxValue){
+        const modal = new bootstrap.Modal(document.getElementById('formModal'));
+                modal.show();
+                $("#saveData").show();
+                const [scheduleDate, shiftId, locationTypeId, checkerId, statusId] = scheduleCheckboxValue.split('|');
+                console.log("Checked value: ", [scheduleDate, shiftId, locationTypeId, checkerId, statusId]);
+                $.ajax({
+                    url: `<%= API_URL %>/admin/schedule/query/${scheduleDate}/${shiftId}/${locationTypeId}/${checkerId}`,
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    success: async function (data) {
+                        console.log(data);
+                        let shiftOptions, locationTypeOptions,petugasOptionsData;
+
+                            shiftOptions = await loadShiftOptions(shiftId);
+                            locationTypeOptions = await loadLocationTypeOptions(locationTypeId);
+                            petugasOptionsData = await petugasOptions(checkerId);
+
+                            document.getElementById("dataFormContent").innerHTML = `
+                            <h5>Edit Akses</h5>
+                            <div class="mb-3">
+                                <label for="tanggal" class="form-label">Tanggal</label>
+                                <input type="date" class="form-control" id="schedule_date" name="schedule_date" value="${scheduleDate}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="shiftName" class="form-label">Shift</label>
+                                ${shiftOptions}
+                            </div>
+                            <div class="mb-3">
+                                <label for="locationType" class="form-label">Location Type</label>
+                                ${locationTypeOptions}
+                            </div>
+                            <div class="mb-3">
+                                <label for="petugas" class="form-label">Petugas</label>
+                                ${petugasOptionsData}
+                            </div>
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
+                            `;
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error fetching menu data:', error);
+                        alert('❌ Gagal mengambil data menu. Silakan coba lagi.');
+                        modal.hide();
+                    }
+                });
+    }
 </script>

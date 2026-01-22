@@ -172,9 +172,8 @@ exports.getByQueryParam = async (req, res) => {
 // 🔹 Create
 exports.create = async (req, res) => {
   try {
-    const menuId = 13; // /admin/schedule
-    const permissionId = [2]; // 1 view 2 create, 3 edit, 4 delete, 5 print
-    // validasi akses
+    const menuId = 13;
+    const permissionId = [2];
     const allowed = await checkPermission(menuId, permissionId, req.user);
     if (!allowed) {
       return res.status(401).json({
@@ -183,20 +182,59 @@ exports.create = async (req, res) => {
       });
     }
 
-    const data = await Schedule.create(req.body);
-    res.status(201).json({
-      status: "Success",
-      message: "Schedule berhasil ditambahkan!",
-      data,
+    const {
+      schedule_date,
+      shift_id,
+      location_type_id,
+      checker_id,
+      status
+    } = req.body;
+
+    // 🔎 cek existing schedule (composite key)
+    const existing = await Schedule.findOne({
+      where: {
+        schedule_date,
+        shift_id,
+        location_type_id,
+        checker_id
+      }
     });
+
+    let data;
+    let message;
+
+    if (existing) {
+      // 🔁 UPDATE
+      await existing.update({ status });
+      data = existing;
+      message = "Jadwal berhasil diperbarui";
+    } else {
+      // ➕ INSERT
+      data = await Schedule.create({
+        schedule_date,
+        shift_id,
+        location_type_id,
+        checker_id,
+        status
+      });
+      message = "Jadwal berhasil ditambahkan";
+    }
+
+    res.json({
+      status: "Success",
+      message,
+      data
+    });
+
   } catch (err) {
     res.status(500).json({
       status: "Error",
-      message: "Gagal menambahkan Schedule.",
+      message: "Gagal menyimpan Schedule.",
       data: err.message,
     });
   }
 };
+
 
 // 🔹 Update
 exports.update = async (req, res) => {
