@@ -28,8 +28,8 @@ exports.generateLocationPDF = async (req, res) => {
     doc.moveDown(1);
 
     // Ukuran dan posisi QR
-    const qrWidth = 300;
-    const qrHeight = 300;
+    const qrWidth = 250;
+    const qrHeight = 250;
     const pageWidth = doc.page.width;
 
     for (let i = 0; i < data.length; i++) {
