@@ -37,7 +37,7 @@
 </div>
 <div style="display: flex;">
     <div style="margin-left: auto; margin-right: 8px; margin-top: 12px;">
-        <input type="month" id="monthPicker" value="2026-01">
+        <input type="month" id="monthPicker" value="2026-02" onchange="loadPatrolData()">
         <button style="width:164px;background-color: rgb(100, 100, 2);color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;padding: 5px;" onclick="loadPatrolData()"><i class="fa fa-search"></i>&nbsp; Tampilkan</button>
     </div>
 </div>
@@ -47,6 +47,7 @@
         <div id="scheduleContainer" style="width: 500px; font-size: xx-small;"></div>
 
     </div>
+    <span style="font-size: 12px;">*Auto Schedule melakukan otomatis schedule dengan Pola : PB | PB | MB | MB | O | O</span>
 </div>
 
 <!-- Modal Preview Gambar -->
@@ -86,10 +87,11 @@
     const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
     let modeSave = 'insert'; // insert atau edit
 
-    async function loadPatrolData(page, rowCount) {
+    async function loadPatrolData() {
 
         let tableBody = '';
             const monthValue = document.getElementById('monthPicker').value;
+            console.log("Selected month:", monthValue);
             if (!monthValue) return;
 
             const [year, month] = monthValue.split('-').map(Number);
@@ -97,8 +99,8 @@
 
             // contoh data pegawai
             const employees = await petugasList();
-            const schedules = await scheduleList();
-            console.log("schedule ", schedules);
+            const schedules = await scheduleList(monthValue);
+            console.log("schedule data ini", schedules);
 
             let table = `
                 <table class="schedule-table">
@@ -106,6 +108,7 @@
                     <tr>
                     <th rowspan="2">No</th>
                     <th rowspan="2">Nama</th>
+                    <th rowspan="2">Sync.</th>
                     <th colspan="${daysInMonth}" style="text-align: center;">Tanggal</th>
                     </tr>
                     <tr>
@@ -125,11 +128,12 @@
                 <tr style="hover: background-color: #f0f0f0;">
                     <td>${index + 1}</td>
                     <td>${emp.full_name}</td>
+                    <td><button style="background-color: #018FDA;color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;" onclick="autoScehdule('${monthValue}|${emp.user_id}|${emp.full_name}')">Auto</button></td>
                 `;
 
                 for (let d = 1; d <= daysInMonth; d++) {
 
-                    let bgColor = 'style="background-color: red;"';
+                    let bgColor = 'style="background-color: #018FDA;"';
                     let labelInfo = '';
                     const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                     if (schedules[dateKey] && schedules[dateKey][emp.user_id] && schedules[dateKey][emp.user_id].length > 0) {
@@ -142,7 +146,7 @@
                     }
                     table += `<td ${bgColor}>
                         ${labelInfo}
-                        <button style="background-color: #2cbae8;color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;" onclick="easyInputScehdule('${dateKey}|1|1|${emp.employe_id}|1')">O</button>
+                        <button style="background-color: #018FDA;color: #FFFFFF;border-radius: 5px;border: solid 1px #FFFFFF;" onclick="easyInputScehdule('${dateKey}|1|1|${emp.employe_id}|1')">O</button>
                      </td>`;
                 }
 
@@ -334,9 +338,9 @@ function loadShiftOptions(selectedId = null) {
             return petugasList;
         });
     }
-    function scheduleList(){
+    function scheduleList(month){
         return $.ajax({
-            url: `<%= API_URL %>/admin/schedule/where`,
+            url: `<%= API_URL %>/admin/schedule/where?month=${month}`,
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('token'),
@@ -566,5 +570,121 @@ async function openModal(mode) {
                         modal.hide();
                     }
                 });
+    }
+
+    function autoScehdule(value){
+        const [monthValue, employeId, fullName] = value.split('|');
+        let indexStartDate = 1;
+
+        const startDate = prompt(
+        `Masukkan tanggal mulai (format: 1-31) untuk Auto Schedule Pegawai ${fullName}`
+        );
+
+        // kalau user isi dan bukan kosong
+        if (startDate !== null && startDate.trim() !== "") {
+            indexStartDate = parseInt(startDate);
+        }
+
+        const confirmation = confirm(
+        `Apakah Anda yakin ingin melakukan Auto Schedule mulai ${indexStartDate}?\nData jadwal yang ada akan direset dan diganti dengan jadwal baru.`
+        );
+
+        if (!confirmation) {
+            return;
+        }
+        // lanjut proses auto schedule
+        const monthData = document.getElementById('monthPicker').value;
+        const [year, month] = monthData.split('-').map(Number);
+        const daysInMonth = new Date(year, month, 0).getDate();
+        // console.log("Days in month:", daysInMonth);
+
+        // console.log("Tanggal mulai:", indexStartDate);
+        const patern = ['PB', 'PB', 'MB', 'MB', 'O', 'O'];
+        const paternBack = ['O', 'O', 'MB', 'MB', 'PB', 'PB'];
+        let dataList = [];
+        let currentIndex = indexStartDate - 1; // sesuai input input user
+        // mapping shift
+        // ['PB', 'PB', 'MB', 'MB', 'O', 'O','PB', 'PB', 'MB', 'MB', 'O', 'O']
+        //                                  ['PB', 'PB', 'MB', 'MB', 'O', 'O']
+        if(currentIndex == 0){
+            for(let d = 1 ; d <= daysInMonth; d++){
+                dataList.push(patern[(d-1)%6]);
+            }
+            console.log("Data list for auto schedule:", dataList);
+        }else{
+            let dataListBefore = [];
+            for(let d = 1 ; d <= currentIndex; d++){
+                dataListBefore.push(paternBack[(d-1)%6]);
+            }
+
+            let dataListNext = [];
+            for(let d = 1 ; d <= daysInMonth - currentIndex; d++){
+                dataListNext.push(patern[(d-1)%6]);
+            }
+            // console.log("dataListBefore:", dataListBefore);
+            // console.log("dataListNext:", dataListNext);
+            for(let i=dataListBefore.length -1 ; i >=0 ; i--){
+                dataList.push(dataListBefore[i]);
+            }
+            dataListNext.forEach(item => {
+                dataList.push(item);
+            });
+            console.log("Data list for auto schedule:", dataList);
+        }
+
+        let mappingConfigDefaultSchedule = {
+                                            PB:{
+                                                schedule_date:monthData, 
+                                                shift_id:1, 
+                                                location_type_id:1, 
+                                                checker_id:employeId, 
+                                                status:1
+                                            },
+                                            MB:{
+                                                schedule_date:monthData, 
+                                                shift_id:2, 
+                                                location_type_id:1, 
+                                                checker_id:employeId, 
+                                                status:1
+                                            },
+                                            O:{
+                                                schedule_date:monthData, 
+                                                shift_id:1, 
+                                                location_type_id:1, 
+                                                checker_id:employeId, 
+                                                status:0
+                                            }
+                                        };
+            let payloadAutoSchedule = [];
+            for (let i = 0; i < dataList.length; i++) {
+                const day = i + 1;
+                const baseConfig = mappingConfigDefaultSchedule[dataList[i]];
+                payloadAutoSchedule.push({
+                    ...baseConfig,
+                    schedule_date: `${monthData}-${String(day).padStart(2, '0')}`
+                });
+            }
+
+            console.log(payloadAutoSchedule);
+            console.log("Auto schedule for:", monthValue, employeId, fullName);
+            $.ajax({
+                url: `<%= API_URL %>/admin/schedule/bulk`,
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                data: JSON.stringify(payloadAutoSchedule),
+                success: function (data) {
+                    alert('✅ Jadwal berhasil disinkronisasi!');
+                    location.reload();
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error auto scheduling:', error);
+                    alert('❌ Gagal menyinkronisasi jadwal. Silakan coba lagi.');
+                }
+            });
+        
     }
 </script>

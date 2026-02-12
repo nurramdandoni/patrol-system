@@ -1,4 +1,4 @@
-const { User, Role } = require("../models");
+const { sequelize, User, Role } = require("../models");
 const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const checkPermission = require("../utils/checkPermission");
@@ -28,6 +28,33 @@ exports.getAll = async (req, res) => {
       limit: rowCount,
       offset,
     });
+
+    // // 🔹 count
+    // const [[count]] = await sequelize.query(`
+    //   SELECT COUNT(*) AS total FROM users
+    // `);
+
+    // // 🔹 data
+    // const rows = await sequelize.query(
+    //   `
+    //   SELECT 
+    //     u.id,
+    //     u.username,
+    //     u.role_id,
+    //     r.name
+    //   FROM users u
+    //   LEFT JOIN roles r ON r.id = u.role_id
+    //   ORDER BY u.id DESC
+    //   LIMIT :limit OFFSET :offset
+    //   `,
+    //   {
+    //     replacements: {
+    //       limit: rowCount,
+    //       offset,
+    //     },
+    //     type: sequelize.QueryTypes.SELECT,
+    //   }
+    // );
     
     res.json({
       statusCode: 200,

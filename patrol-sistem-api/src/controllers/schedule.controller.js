@@ -235,6 +235,88 @@ exports.create = async (req, res) => {
   }
 };
 
+// 🔹 Create Bulk
+exports.bulkCreateOrUpdate = async (req, res) => {
+  const t = await Schedule.sequelize.transaction();
+
+  try {
+    const menuId = 13;
+    const permissionId = [2];
+    const allowed = await checkPermission(menuId, permissionId, req.user);
+
+    if (!allowed) {
+      return res.status(401).json({
+        status: "Access",
+        message: "Access Not Allowed",
+      });
+    }
+
+    const schedules = req.body;
+
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Data harus berupa array dan tidak boleh kosong"
+      });
+    }
+
+    let result = [];
+
+    for (const item of schedules) {
+      const {
+        schedule_date,
+        shift_id,
+        location_type_id,
+        checker_id,
+        status
+      } = item;
+
+      const existing = await Schedule.findOne({
+        where: {
+          schedule_date,
+          shift_id,
+          location_type_id,
+          checker_id
+        },
+        transaction: t
+      });
+
+      if (existing) {
+        await existing.update({ status }, { transaction: t });
+        result.push(existing);
+      } else {
+        const created = await Schedule.create({
+          schedule_date,
+          shift_id,
+          location_type_id,
+          checker_id,
+          status
+        }, { transaction: t });
+
+        result.push(created);
+      }
+    }
+
+    await t.commit();
+
+    res.json({
+      status: "Success",
+      message: "Bulk schedule berhasil diproses",
+      data: result
+    });
+
+  } catch (err) {
+    await t.rollback();
+
+    res.status(500).json({
+      status: "Error",
+      message: "Gagal menyimpan bulk schedule",
+      data: err.message
+    });
+  }
+};
+
+
 
 // 🔹 Update
 exports.update = async (req, res) => {
