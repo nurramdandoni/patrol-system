@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { PatrolActivity, Location, User, Schedule } = require("../models");
+const { PatrolActivity, Location, User, Schedule, Shift } = require("../models");
 const jwtUtils = require("../utils/jwt");
 const { json, Op, fn, col, literal } = require("sequelize");
 const checkPermission = require("../utils/checkPermission");
@@ -49,7 +49,8 @@ exports.patrolActivity = async (req, res) => {
         { 
           model: Schedule,
           where:where,
-          required:true
+          required:true,
+          include:[{model: Shift}]
          },
       ],
     });
