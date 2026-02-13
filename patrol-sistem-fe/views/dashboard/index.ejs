@@ -41,7 +41,7 @@
         const fromDate = document.getElementById('from').value;
         const toDate = document.getElementById('to').value;
 
-        fetch(`<%= API_URL %>/admin/dashboard-data?page=${page}&rowCount=${rowCount}&date_from=${fromDate}&date_to=${toDate}`, {
+        fetch(`<%= API_URL %>/admin/dashboard-data?date_from=${fromDate}&date_to=${toDate}`, {
             method: 'GET',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('token'),

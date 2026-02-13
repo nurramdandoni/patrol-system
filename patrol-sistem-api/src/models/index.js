@@ -64,8 +64,11 @@ Schedule.belongsTo(LocationType, { foreignKey: 'location_type_id' });
 // Schedule ↔ User (checker)
 Schedule.belongsTo(User, { foreignKey: 'checker_id' });
 
-// Shift ↔ Schedule
+// Schedule ↔ Shift
 Schedule.belongsTo(Shift, { foreignKey: 'shift_id' });
+
+// PatrolActivity ↔ Schedule
+PatrolActivity.belongsTo(Schedule, { foreignKey: 'schedule_id' });
 
 
 models.sequelize = sequelize;

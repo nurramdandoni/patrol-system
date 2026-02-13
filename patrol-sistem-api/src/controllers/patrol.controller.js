@@ -3,6 +3,7 @@ const { Location, PatrolActivity, User, Schedule, Employee, LocationType} = requ
 const jwtUtils = require('../utils/jwt');
 const { json, Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
+const checkScheduleActiveNow = require('../utils/checkScheduleActive');
 const { now } = require('sequelize/lib/utils');
 
 exports.readQr = async (req, res) => {
@@ -80,10 +81,10 @@ exports.list = async (req, res) => {
     const where = {};
     const today = new Date();
     const dateOnly = new Date(today.toISOString().split('T')[0]); 
-    where.createdAt = { [Op.gte]: dateOnly }
+    console.log("today : ",dateOnly);
+    where.schedule_date = { [Op.eq]: dateOnly }
     console.log(where);
     const { count: countActivity, rows: rowsActivity } = await PatrolActivity.findAndCountAll({
-      where,
       limit: rowCount,
       offset,
       include: [
@@ -93,7 +94,12 @@ exports.list = async (req, res) => {
             {model:Employee, attributes:['id','full_name']}
           ]
         },
-        {model:Location, attributes:['id','name']}
+        {model:Location, attributes:['id','name']},
+        {
+          model:Schedule,
+          where:where,
+          required:true
+        }
       ]
     });
 
@@ -103,7 +109,7 @@ exports.list = async (req, res) => {
         data.push({
             id: item.id,
             name: item.name,
-            token_location: jwtUtils.generateToken({location_id: item.id}),
+            token_location: jwtUtils.generateToken10Years({location_id: item.id}),
             location_type: item.location_type.name,
             patrol_activity: rowsActivity.filter(pa => pa.location_id === item.id)
         });
@@ -143,22 +149,34 @@ exports.checking = async (req, res) => {
     const payload = jwtUtils.verifyToken(token_location);
 
     console.log(payload);
+    console.log(req.user);
+    const [cekScheduleActive] = await checkScheduleActiveNow(req.user);
     // simpan data ke tabel patrol actvity
-    const newPatrol = await PatrolActivity.create({
-        check_date: new Date(),
-        check_by: req.user.user_id,
-        location_id: payload.location_id,
-        check_notes: notes,
-        check_image: file_images,
-        check_status:1, // 1 check in, 0 check not
-    });
+    if(cekScheduleActive){
+        const newPatrol = await PatrolActivity.create({
+            schedule_id:cekScheduleActive.id,
+            location_id: payload.location_id,
+            check_date: new Date(),
+            check_by: req.user.user_id,
+            check_notes: notes,
+            check_image: file_images,
+            check_status:1, // 1 check in, 0 check not
+        });
 
-    res.json({
-        statusCode: 200,
-        status: 'Success',
-        message: 'Check Patrol Berhasil Disimpan!',
-        data: newPatrol,
-    });
+        res.json({
+            statusCode: 200,
+            status: 'Success',
+            message: 'Check Patrol Berhasil Disimpan!',
+            data: newPatrol,
+        });
+    }else{
+        res.json({
+            statusCode: 200,
+            status: 'Failed',
+            message: 'Anda Tidak Memiliki Jadwal patroli!',
+            data: newPatrol,
+        });
+    }
 
     
 };

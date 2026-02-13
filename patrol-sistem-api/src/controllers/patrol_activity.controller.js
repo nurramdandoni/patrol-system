@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const { PatrolActivity, Location, User } = require("../models");
+const { PatrolActivity, Location, User, Schedule } = require("../models");
 const jwtUtils = require("../utils/jwt");
 const { json, Op, fn, col, literal } = require("sequelize");
 const checkPermission = require("../utils/checkPermission");
@@ -25,28 +25,32 @@ exports.patrolActivity = async (req, res) => {
 
     const where = {};
     if (date_from && date_to) {
-      // ubah ke format YYYY-MM-DDT00:00:00 lokal
-      const fromDate = new Date(`${date_from}T00:00:00`);
-      const toDate = new Date(`${date_to}T23:59:59`);
+      const fromDate = date_from;
+      const toDate = date_to;
 
-      where.check_date = {
+      where.schedule_date = {
         [Op.between]: [fromDate, toDate],
       };
-    } else if (date_from) {
-      const fromDate = new Date(`${date_from}T00:00:00`);
-      where.check_date = { [Op.gte]: fromDate };
+    } 
+    else if (date_from) {
+      const fromDate = new Date(date_from);
+      where.schedule_date = { [Op.gte]: fromDate };
     } else if (date_to) {
-      const toDate = new Date(`${date_to}T23:59:59`);
-      where.check_date = { [Op.lte]: toDate };
+      const toDate = new Date(date_to);
+      where.schedule_date = { [Op.lte]: toDate };
     }
 
     const { count, rows } = await PatrolActivity.findAndCountAll({
-      where,
       limit: rowCount,
       offset,
       include: [
         { model: User, attributes: ["id", "username"] },
         { model: Location, attributes: ["id", "name"] },
+        { 
+          model: Schedule,
+          where:where,
+          required:true
+         },
       ],
     });
 
@@ -82,29 +86,35 @@ exports.dashboardData = async (req, res) => {
 
     const where = {};
     if (date_from && date_to) {
-      // ubah ke format YYYY-MM-DDT00:00:00 lokal
-      const fromDate = new Date(`${date_from}T00:00:00`);
-      const toDate = new Date(`${date_to}T23:59:59`);
+      const fromDate = date_from;
+      const toDate = date_to;
 
-      where.check_date = {
+      where.schedule_date = {
         [Op.between]: [fromDate, toDate],
       };
     } else if (date_from) {
-      const fromDate = new Date(`${date_from}T00:00:00`);
-      where.check_date = { [Op.gte]: fromDate };
+      const fromDate = new Date(date_from);
+      where.schedule_date = { [Op.gte]: fromDate };
     } else if (date_to) {
-      const toDate = new Date(`${date_to}T23:59:59`);
-      where.check_date = { [Op.lte]: toDate };
+      const toDate = new Date(date_to);
+      where.schedule_date = { [Op.lte]: toDate };
     }
 
     const rows = await PatrolActivity.findAll({
-    where,
-      attributes: [
-        [fn('DATE', col('check_date')), 'date'],
-        [fn('COUNT', col('id')), 'total']
+      include: [
+        { 
+          model: Schedule,
+          where:where,
+          required:true,
+          attributes: []
+         },
       ],
-      group: [fn('DATE', col('check_date'))],
-      order: [[fn('DATE', col('check_date')), 'ASC']]
+      attributes: [
+            [fn('DATE', col('schedule.schedule_date')), 'date'],
+            [fn('COUNT', col('patrol_activity.id')), 'total']
+          ],
+      group: [fn('DATE', col('schedule.schedule_date'))],
+      order: [[fn('DATE', col('schedule.schedule_date')), 'ASC']]
     });
 
     res.json({
