@@ -148,35 +148,40 @@
             }
             let tableBody = '';
             const data = await response.json();
-            data.data.forEach((item, index) => {
+            if(data.data){
+                data.data.forEach((item, index) => {
                 window.patrolActivityStore[item.id] = item.patrol_activity;
                 tableBody += `
-          <tr>
-            <td>${index + 1+(currentPage - 1) * rowCount}</td>
-            <td>${item.name}</td>
-            <td>
-              ${item.patrol_activity.length > 0
-                        ? item.patrol_activity[0].check_image && item.patrol_activity[0].check_image.trim() !== ''
-                            ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('<%= API_URL %>/${item.patrol_activity[0].check_image}')">
-                        <i class="bi bi-eye-fill"></i> onCapture
-                      </span>`
-                            : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
-                        : '<span class="badge bg-secondary">-</span>'
-                    }
-            </td>
-            <td>${item.patrol_activity.length > 0 ? item.patrol_activity[0].check_notes : '-'}</td>
-            <td>
-              ${item.patrol_activity.length > 0
-                        ? item.patrol_activity[0].check_status == 1
-                            ? `<span class="badge bg-success" style="cursor:pointer" onclick="showDetail('${item.id}')"><i class="bi bi-check-lg"></i> Checked ${item.patrol_activity.length}/6</span>`
-                            : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
-                        : '<span class="badge bg-secondary">-</span>'
-                    }
-            </td>
-            <td>${item.location_type}</td>
-          </tr>
-        `;
-            });
+                    <tr>
+                        <td>${index + 1+(currentPage - 1) * rowCount}</td>
+                        <td>${item.name}</td>
+                        <td>
+                        ${item.patrol_activity.length > 0
+                                    ? item.patrol_activity[0].check_image && item.patrol_activity[0].check_image.trim() !== ''
+                                        ? `<span class="badge bg-success" style="cursor:pointer" onclick="showImage('<%= API_URL %>/${item.patrol_activity[0].check_image}')">
+                                    <i class="bi bi-eye-fill"></i> onCapture
+                                </span>`
+                                        : '<span class="badge bg-danger"><i class="bi bi-eye-slash-fill"></i> notCapture</span>'
+                                    : '<span class="badge bg-secondary">-</span>'
+                                }
+                        </td>
+                        <td>${item.patrol_activity.length > 0 ? item.patrol_activity[0].check_notes : '-'}</td>
+                        <td>
+                        ${item.patrol_activity.length > 0
+                                    ? item.patrol_activity[0].check_status == 1
+                                        ? `<span class="badge bg-success" style="cursor:pointer" onclick="showDetail('${item.id}')"><i class="bi bi-check-lg"></i> Checked ${item.patrol_activity.length}/6</span>`
+                                        : '<span class="badge bg-danger"><i class="bi bi-x-lg"></i> Not Checked</span>'
+                                    : '<span class="badge bg-secondary">-</span>'
+                                }
+                        </td>
+                        <td>${item.location_type}</td>
+                    </tr>
+                    `;
+                });
+            }else{
+                tableBody += `<tr><td colspan=6 style="text-align:center;">Selamat Berlibur</td></tr>`;
+            }
+            
             // console.log(tableBody);
             document.getElementById('patrol-data').innerHTML = tableBody;
             renderPagination(data.totalData, rowCount);

@@ -308,8 +308,12 @@
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || "Gagal submit");
-
-        alert("✅ " + data.message);
+        if(data.statusCode == 200){
+          alert("✅ " + data.message);
+        }else{
+          alert("❌ " + data.message);
+        }
+        
         window.location.href = "/patrol-list";
       } catch (err) {
         alert("❌ " + err.message);

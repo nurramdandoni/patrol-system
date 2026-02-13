@@ -12,6 +12,7 @@ async function checkScheduleActiveNow(payload) {
       FROM schedule s
       JOIN shift sh ON sh.id = s.shift_id
       WHERE s.checker_id = :checkerId 
+      AND s.status = 1
       AND (
           CONVERT_TZ(NOW(), '+00:00', '+07:00')
           BETWEEN 
@@ -31,7 +32,11 @@ async function checkScheduleActiveNow(payload) {
       }
     );
 
-    return result;
+    if(result != undefined){
+      return result;
+    }else{
+      return false;
+    }
 
   } catch (err) {
     console.error('Error checking schedule:', err);

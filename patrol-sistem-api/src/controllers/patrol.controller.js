@@ -4,6 +4,7 @@ const jwtUtils = require('../utils/jwt');
 const { json, Op } = require('sequelize');
 const checkPermission = require('../utils/checkPermission');
 const checkScheduleActiveNow = require('../utils/checkScheduleActive');
+const checkScheduleActiveToday = require('../utils/checkScheduleActiveToday');
 const { now } = require('sequelize/lib/utils');
 
 exports.readQr = async (req, res) => {
@@ -115,14 +116,22 @@ exports.list = async (req, res) => {
         });
     });
 
-
+    const dataToday = await checkScheduleActiveToday(req.user);
+    let dataServe;
+    if(payload.role_id == "6"){
+      if(dataToday.length > 0){
+        dataServe = data;
+      }
+    }else{
+      dataServe = data;
+    }
 
     res.json({
       statusCode: 200,
       status: 'Success',
       message: 'Data Berhasil Ditemukan!',
       totalData: count,
-      data: data,
+      data: dataServe,
     });
   } catch (err) {
     res.status(500).json({
@@ -149,12 +158,11 @@ exports.checking = async (req, res) => {
     const payload = jwtUtils.verifyToken(token_location);
 
     console.log(payload);
-    console.log(req.user);
-    const [cekScheduleActive] = await checkScheduleActiveNow(req.user);
+    const cekScheduleActive = await checkScheduleActiveNow(req.user);
     // simpan data ke tabel patrol actvity
-    if(cekScheduleActive){
+    if(cekScheduleActive.length > 0){
         const newPatrol = await PatrolActivity.create({
-            schedule_id:cekScheduleActive.id,
+            schedule_id:cekScheduleActive[0].id,
             location_id: payload.location_id,
             check_date: new Date(),
             check_by: req.user.user_id,
@@ -171,10 +179,9 @@ exports.checking = async (req, res) => {
         });
     }else{
         res.json({
-            statusCode: 200,
+            statusCode: 404,
             status: 'Failed',
-            message: 'Anda Tidak Memiliki Jadwal patroli!',
-            data: newPatrol,
+            message: 'Waktu Shift Patroli Anda Belum Dimulai!',
         });
     }
 
