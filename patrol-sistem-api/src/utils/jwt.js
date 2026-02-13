@@ -13,6 +13,9 @@ const generateToken = (payload) => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
+const generateToken10Years = (payload) => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '3650d' });
+};
 /**
  * Verify JWT token
  * @param {String} token - Token dari header
@@ -41,6 +44,7 @@ const decodeToken = (token) => {
 
 module.exports = {
   generateToken,
+  generateToken10Years,
   verifyToken,
   decodeToken,
 };

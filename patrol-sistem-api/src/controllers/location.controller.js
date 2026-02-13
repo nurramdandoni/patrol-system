@@ -32,7 +32,7 @@ exports.getAll = async (req, res) => {
     });
 
     for (const item of rows) {
-      item.dataValues.token_location = await jwtUtils.generateToken({
+      item.dataValues.token_location = await jwtUtils.generateToken10Years({
         location_id: item.id,
       });
     }
